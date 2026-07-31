@@ -18,6 +18,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js">
     </script>
     <style>
+        /* ===== BASE STYLES (unchanged) ===== */
         * {
             margin: 0;
             padding: 0;
@@ -251,6 +252,10 @@
         }
         .section-header h3 {
             font-size: 18px;
+            color: #1a3a1a;
+        }
+        .section-header h4 {
+            font-size: 15px;
             color: #1a3a1a;
         }
         .table-wrapper {
@@ -659,6 +664,479 @@
             margin: 10px 0 15px 0;
             flex-wrap: wrap;
         }
+        /* ===== NEW MODULE STYLES ===== */
+        .parent-card {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #166534;
+        }
+        .chat-message {
+            padding: 8px 14px;
+            border-radius: 16px;
+            margin: 4px 0;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .chat-message.sent {
+            background: #166534;
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .chat-message.received {
+            background: #e5e7eb;
+            color: #1a1a1a;
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 16px;
+            background: #fafafa;
+        }
+        .fee-structure-item {
+            background: #f1f5f9;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .fee-structure-item .fee-amount {
+            font-weight: bold;
+            color: #166534;
+        }
+        .timetable-grid {
+            display: grid;
+            grid-template-columns: 80px repeat(5, 1fr);
+            gap: 4px;
+            font-size: 12px;
+        }
+        .timetable-grid .cell {
+            background: #f8fafc;
+            padding: 6px 4px;
+            border-radius: 6px;
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #e2e8f0;
+        }
+        .timetable-grid .cell.header {
+            background: #0a2f2a;
+            color: white;
+            font-weight: 600;
+        }
+        .timetable-grid .cell.time {
+            background: #e8f5e9;
+            font-weight: 600;
+        }
+        .book-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .book-card .book-title {
+            font-weight: 600;
+            color: #1a3a1a;
+        }
+        .book-card .book-meta {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .borrowing-status {
+            font-size: 11px;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .borrowing-status.available {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .borrowing-status.borrowed {
+            background: #fef9e3;
+            color: #92400e;
+        }
+        .borrowing-status.overdue {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .assignment-item {
+            background: #f8fafc;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border-left: 4px solid #0284c7;
+        }
+        .assignment-item .due-date {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .bus-route-item {
+            background: #f1f5f9;
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .notification-bell {
+            position: relative;
+            cursor: pointer;
+        }
+        .notification-bell .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #dc2626;
+            color: white;
+            border-radius: 50%;
+            padding: 0 6px;
+            font-size: 10px;
+            min-width: 18px;
+            text-align: center;
+        }
+        .role-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            color: white;
+        }
+        .role-badge.superadmin {
+            background: #7c3aed;
+        }
+        .role-badge.admin {
+            background: #0284c7;
+        }
+        .role-badge.teacher {
+            background: #0d9488;
+        }
+        .role-badge.parent {
+            background: #f59e0b;
+        }
+        .role-badge.accountant {
+            background: #db2777;
+        }
+        .role-badge.librarian {
+            background: #4f46e5;
+        }
+        .role-badge.nurse {
+            background: #0891b2;
+        }
+        /* Boarding cards */
+        .boarding-card {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #0d9488;
+        }
+        .boarding-card h4 {
+            color: #0a2f2a;
+            margin-bottom: 6px;
+        }
+        .boarding-card .meta {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .attendance-summary {
+            background: #f1f8f4;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin: 10px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        .attendance-summary .stat {
+            text-align: center;
+        }
+        .attendance-summary .stat .number {
+            font-size: 20px;
+            font-weight: 700;
+            color: #166534;
+        }
+        .attendance-summary .stat .label {
+            font-size: 11px;
+            color: #64748b;
+        }
+        .fee-structure-table input {
+            width: 100px;
+            padding: 6px 8px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 13px;
+        }
+        .role-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+        .role-selector .role-btn {
+            padding: 8px 20px;
+            border-radius: 30px;
+            border: 2px solid #ddd;
+            background: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        .role-selector .role-btn.active {
+            border-color: #166534;
+            background: #e8f5e9;
+            color: #166534;
+        }
+        .role-selector .role-btn:hover {
+            border-color: #166534;
+        }
+        .status-badge {
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .status-badge.approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .status-badge.pending {
+            background: #fef9e3;
+            color: #92400e;
+        }
+        .status-badge.rejected {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .status-badge.present {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .status-badge.absent {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .status-badge.excused {
+            background: #fef9e3;
+            color: #92400e;
+        }
+        .boarding-detail {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin: 6px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .boarding-detail .label {
+            font-weight: 500;
+            font-size: 13px;
+        }
+        .boarding-detail .value {
+            font-size: 13px;
+            color: #166534;
+        }
+        .portal-login-container {
+            max-width: 420px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 32px;
+            padding: 35px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        .portal-login-container .portal-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 32px;
+            color: white;
+        }
+        .portal-login-container .portal-icon.parent {
+            background: #f59e0b;
+        }
+        .portal-login-container .portal-icon.teacher {
+            background: #0d9488;
+        }
+        .portal-login-container .portal-icon.staff {
+            background: #7c3aed;
+        }
+        .portal-login-container .portal-icon.admin {
+            background: #0284c7;
+        }
+        .portal-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .portal-selector .portal-btn {
+            padding: 10px 24px;
+            border-radius: 30px;
+            border: 2px solid #ddd;
+            background: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+            font-size: 13px;
+        }
+        .portal-selector .portal-btn.active {
+            border-color: #166534;
+            background: #e8f5e9;
+            color: #166534;
+        }
+        .portal-selector .portal-btn:hover {
+            border-color: #166534;
+        }
+        .dashboard-widgets {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .dashboard-widgets .widget {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        .dashboard-widgets .widget .widget-icon {
+            font-size: 28px;
+            margin-bottom: 6px;
+        }
+        .dashboard-widgets .widget .widget-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0a2f2a;
+        }
+        .dashboard-widgets .widget .widget-label {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .attendance-checkbox {
+            width: 18px;
+            height: 18px;
+            accent-color: #166534;
+            cursor: pointer;
+        }
+        .attendance-checkbox.excused {
+            accent-color: #f59e0b;
+        }
+        .week-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .week-selector select {
+            padding: 6px 12px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+        }
+        .fee-setting-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #f1f5f9;
+            flex-wrap: wrap;
+        }
+        .fee-setting-row label {
+            width: 100px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        .fee-setting-row input {
+            flex: 1;
+            min-width: 120px;
+        }
+        /* ===== PERMISSION ERROR STYLES ===== */
+        .permission-error {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-radius: 12px;
+            padding: 16px 20px;
+            color: #991b1b;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .permission-error i {
+            font-size: 20px;
+            color: #dc2626;
+        }
+        .permission-error .error-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .permission-error .error-desc {
+            font-size: 13px;
+            color: #7f1d1d;
+        }
+        .data-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 30px;
+            color: #64748b;
+        }
+        .data-loading i {
+            font-size: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        .retry-btn {
+            background: #0284c7;
+            color: white;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        .retry-btn:hover {
+            background: #0369a1;
+        }
         @media print {
             body * {
                 visibility: hidden;
@@ -977,181 +1455,32 @@
         .analytics-enhanced .bronze {
             color: #cd7f32;
         }
-        /* ===== NEW MODULE STYLES ===== */
-        .parent-card {
-            background: #f8fafc;
-            border-radius: 16px;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-left: 4px solid #166534;
-        }
-        .chat-message {
-            padding: 8px 14px;
-            border-radius: 16px;
-            margin: 4px 0;
-            max-width: 80%;
-            word-wrap: break-word;
-        }
-        .chat-message.sent {
-            background: #166534;
-            color: white;
-            align-self: flex-end;
-            margin-left: auto;
-        }
-        .chat-message.received {
-            background: #e5e7eb;
-            color: #1a1a1a;
-        }
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            max-height: 400px;
-            overflow-y: auto;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 16px;
-            background: #fafafa;
-        }
-        .fee-structure-item {
-            background: #f1f5f9;
-            padding: 12px 16px;
+        .permission-error-container {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
             border-radius: 12px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .fee-structure-item .fee-amount {
-            font-weight: bold;
-            color: #166534;
-        }
-        .timetable-grid {
-            display: grid;
-            grid-template-columns: 80px repeat(5, 1fr);
-            gap: 4px;
-            font-size: 12px;
-        }
-        .timetable-grid .cell {
-            background: #f8fafc;
-            padding: 6px 4px;
-            border-radius: 6px;
+            padding: 20px;
             text-align: center;
-            min-height: 50px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border: 1px solid #e2e8f0;
+            color: #991b1b;
+            margin: 20px 0;
         }
-        .timetable-grid .cell.header {
-            background: #0a2f2a;
-            color: white;
-            font-weight: 600;
-        }
-        .timetable-grid .cell.time {
-            background: #e8f5e9;
-            font-weight: 600;
-        }
-        .book-card {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 12px;
+        .permission-error-container i {
+            font-size: 32px;
+            display: block;
             margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .book-card .book-title {
-            font-weight: 600;
-            color: #1a3a1a;
-        }
-        .book-card .book-meta {
-            font-size: 12px;
-            color: #64748b;
-        }
-        .borrowing-status {
-            font-size: 11px;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-        .borrowing-status.available {
-            background: #dcfce7;
-            color: #166534;
-        }
-        .borrowing-status.borrowed {
-            background: #fef9e3;
-            color: #92400e;
-        }
-        .borrowing-status.overdue {
-            background: #fee2e2;
             color: #dc2626;
         }
-        .assignment-item {
-            background: #f8fafc;
-            padding: 12px 16px;
-            border-radius: 12px;
-            margin-bottom: 8px;
-            border-left: 4px solid #0284c7;
-        }
-        .assignment-item .due-date {
-            font-size: 12px;
-            color: #64748b;
-        }
-        .bus-route-item {
-            background: #f1f5f9;
-            padding: 10px 14px;
-            border-radius: 10px;
-            margin-bottom: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .notification-bell {
-            position: relative;
-            cursor: pointer;
-        }
-        .notification-bell .badge {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: #dc2626;
-            color: white;
-            border-radius: 50%;
-            padding: 0 6px;
-            font-size: 10px;
-            min-width: 18px;
-            text-align: center;
-        }
-        .role-badge {
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: 10px;
+        .permission-error-container .error-title {
+            font-size: 16px;
             font-weight: 600;
-            color: white;
         }
-        .role-badge.superadmin {
-            background: #7c3aed;
+        .permission-error-container .error-desc {
+            font-size: 13px;
+            margin-top: 4px;
+            color: #7f1d1d;
         }
-        .role-badge.admin {
-            background: #0284c7;
-        }
-        .role-badge.teacher {
-            background: #0d9488;
-        }
-        .role-badge.parent {
-            background: #f59e0b;
-        }
-        .role-badge.accountant {
-            background: #db2777;
-        }
-        .role-badge.librarian {
-            background: #4f46e5;
+        .permission-error-container .retry-btn {
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -1163,7 +1492,7 @@
         <i class="fab fa-whatsapp"></i>
     </div>
 
-    <!-- Login Section -->
+    <!-- ===== LOGIN SECTION ===== -->
     <div id="authSection">
         <div class="auth-container" style="max-width:480px;margin:60px auto;background:white;border-radius:40px;padding:35px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.1);">
             <div style="background:#0a2f2a;width:70px;height:70px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 15px;">
@@ -1179,8 +1508,15 @@
             </div>
 
             <div id="loginDiv">
+                <!-- Portal Selector -->
+                <div class="portal-selector" style="margin-bottom:15px;">
+                    <button class="portal-btn active" data-portal="admin" onclick="window.selectPortal('admin')">🏫 Admin</button>
+                    <button class="portal-btn" data-portal="parent" onclick="window.selectPortal('parent')">👪 Parent</button>
+                    <button class="portal-btn" data-portal="teacher" onclick="window.selectPortal('teacher')">👨‍🏫 Teacher</button>
+                    <button class="portal-btn" data-portal="staff" onclick="window.selectPortal('staff')">👔 Staff</button>
+                </div>
                 <form class="login-form" onsubmit="return false;">
-                    <input type="email" id="loginEmail" placeholder="School Email" required>
+                    <input type="email" id="loginEmail" placeholder="Email Address" required>
                     <input type="password" id="loginPassword" placeholder="Password" required>
                     <button type="button" class="action-btn primary" onclick="window.doLogin()">Login</button>
                 </form>
@@ -1188,7 +1524,7 @@
                     <span class="forgot-password-link" onclick="window.openResetPassword()"><i class="fas fa-key"></i> Forgot Password?</span>
                 </div>
                 <div style="margin-top:8px;font-size:12px;color:#64748b;">
-                    <i class="fas fa-robot"></i> Demo: demo@temp.com / demo123
+                    <i class="fas fa-robot"></i> Demo: admin@demo.com / demo123
                 </div>
             </div>
 
@@ -1218,7 +1554,7 @@
         </div>
     </div>
 
-    <!-- Sidebar -->
+    <!-- ===== SIDEBAR ===== -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2><i class="fas fa-graduation-cap"></i> EduNexa Pro</h2>
@@ -1237,7 +1573,6 @@
             <div class="nav-item" onclick="window.showSection('messages')"><i class="fas fa-envelope"></i> Messages</div>
             <div class="nav-item" onclick="window.showSection('reports')"><i class="fas fa-file-alt"></i> Reports</div>
             <div class="nav-item" onclick="window.showSection('analytics')"><i class="fas fa-chart-pie"></i> Analytics</div>
-            <!-- NEW MODULES -->
             <div class="nav-item" onclick="window.showSection('parents')"><i class="fas fa-user-friends"></i> Parents</div>
             <div class="nav-item" onclick="window.showSection('fees')"><i class="fas fa-coins"></i> Fees</div>
             <div class="nav-item" onclick="window.showSection('exams')"><i class="fas fa-pencil-alt"></i> Exams</div>
@@ -1252,7 +1587,7 @@
         </div>
     </div>
 
-    <!-- Main Content -->
+    <!-- ===== MAIN CONTENT ===== -->
     <div class="main-content" id="mainApp" style="display:none;">
         <div class="top-bar">
             <div>
@@ -1264,11 +1599,12 @@
                     <i class="fas fa-bell" style="font-size:20px;color:#0a2f2a;"></i>
                     <span class="badge" id="notifBadge" style="display:none;">0</span>
                 </span>
+                <span id="userRoleDisplay" style="font-size:12px;background:#e8f5e9;padding:4px 14px;border-radius:20px;color:#166534;font-weight:600;"></span>
                 <i class="fab fa-whatsapp"></i> 0718899014
             </div>
         </div>
 
-        <!-- DASHBOARD -->
+        <!-- ===== DASHBOARD ===== -->
         <div id="dashboardSection">
             <div class="stats-grid" id="statsGrid"></div>
             <div class="quick-actions">
@@ -1287,7 +1623,6 @@
                 <div class="section-header"><h3>🏆 Top Performers</h3><button class="action-btn" onclick="window.showSection('ranking')">View All →</button></div>
                 <div class="table-wrapper"><table class="data-table"><thead><tr><th>Rank</th><th>Name</th><th>Class</th><th>Stream</th><th>Avg%</th><th>Grade</th></tr></thead><tbody id="topPerformersBody"></tbody></table></div>
             </div>
-            <!-- Fee Summary Widget on Dashboard -->
             <div class="section-card" style="margin-top:10px;">
                 <div class="section-header"><h3>💰 Fee Collection Summary</h3><button class="action-btn info" onclick="window.loadFeeSummary()">Refresh</button></div>
                 <div id="feeSummaryWidget" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:5px 0;">
@@ -1297,9 +1632,18 @@
                     <div class="stat-card"><div class="stat-icon"><i class="fas fa-percent"></i></div><div><h3 id="feeCollectionRate">0%</h3><p>Collection Rate</p></div></div>
                 </div>
             </div>
+            <div class="section-card">
+                <div class="section-header"><h3>📅 Today's Attendance</h3><button class="action-btn info" onclick="window.loadTodayAttendanceWidget()">Refresh</button></div>
+                <div id="todayAttendanceWidget" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:5px 0;">
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-user-check" style="color:#166534;"></i></div><div><h3 id="todayPresent">0</h3><p>Present</p></div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-user-times" style="color:#dc2626;"></i></div><div><h3 id="todayAbsent">0</h3><p>Absent</p></div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-user-clock" style="color:#f59e0b;"></i></div><div><h3 id="todayExcused">0</h3><p>Excused</p></div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-percent" style="color:#0d9488;"></i></div><div><h3 id="todayAttendanceRate">0%</h3><p>Attendance Rate</p></div></div>
+                </div>
+            </div>
         </div>
 
-        <!-- STUDENTS -->
+        <!-- ===== STUDENTS ===== -->
         <div id="studentsSection" style="display:none;">
             <div class="section-card">
                 <div class="section-header"><h3>👩‍🎓 Student Management</h3><button class="action-btn primary" onclick="window.openAddStudent()">+ Register</button><button class="action-btn warning" onclick="window.openBulkPayment()"><i class="fas fa-layer-group"></i> Bulk Registration</button><button class="action-btn info" onclick="window.syncMarks()">🔄 Sync Marks</button></div>
@@ -1318,7 +1662,7 @@
             </div>
         </div>
 
-        <!-- TEACHERS -->
+        <!-- ===== TEACHERS ===== -->
         <div id="teachersSection" style="display:none;">
             <div class="section-card">
                 <div class="section-header"><h3>👨‍🏫 Class Teachers Management</h3><button class="action-btn primary" onclick="window.openAddTeacher()">+ Add Class Teacher</button></div>
@@ -1327,7 +1671,7 @@
             </div>
         </div>
 
-        <!-- TEACHER PORTAL -->
+        <!-- ===== TEACHER PORTAL ===== -->
         <div id="teacherPortalSection" style="display:none;">
             <div class="section-card">
                 <div class="section-header"><h3>👨‍🏫 Teacher Portal</h3></div>
@@ -1345,24 +1689,33 @@
             </div>
         </div>
 
-        <!-- BOARDING -->
+        <!-- ===== BOARDING ===== -->
         <div id="boardingSection" style="display:none;">
             <div class="section-card">
-                <div class="section-header"><h3>🏠 Boarding Management</h3><button class="action-btn primary" onclick="window.showBoardingTab('dormitory')">🏢 Dormitory</button><button class="action-btn info" onclick="window.showBoardingTab('meals')">🍽️ Meals</button><button class="action-btn warning" onclick="window.showBoardingTab('health')">🏥 Health</button><button class="action-btn purple" onclick="window.showBoardingTab('gatepass')">🚪 Gate Pass</button></div>
-                <div id="boardingTabContent" class="boarding-tab-content"></div>
+                <div class="section-header"><h3>🏠 Boarding Management</h3>
+                    <div>
+                        <button class="action-btn primary" onclick="window.showBoardingTab('dormitory')">🏢 Dormitory</button>
+                        <button class="action-btn info" onclick="window.showBoardingTab('meals')">🍽️ Meals</button>
+                        <button class="action-btn warning" onclick="window.showBoardingTab('health')">🏥 Health</button>
+                        <button class="action-btn purple" onclick="window.showBoardingTab('gatepass')">🚪 Gate Pass</button>
+                    </div>
+                </div>
+                <div id="boardingTabContent" class="boarding-tab-content">
+                    <p style="color:#64748b;text-align:center;padding:20px;">Select a boarding management tab above.</p>
+                </div>
             </div>
         </div>
 
-        <!-- GRADE X -->
+        <!-- ===== GRADE X ===== -->
         <div id="gradeXSection" style="display:none;"><div class="section-card"><div class="section-header"><h3>📦 Grade X Archive (Graduated Students)</h3><button class="action-btn excel" onclick="window.exportGradeX()">Export Grade X</button></div><div class="filter-bar"><input type="text" id="gradeXSearch" placeholder="Search..." onkeyup="window.filterGradeX()" style="flex:2;"><input type="text" id="gradeXYear" placeholder="Filter by year" style="width:120px;" onkeyup="window.filterGradeX()"></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>#</th><th>Student Code</th><th>Name</th><th>Former Class</th><th>Stream</th><th>Parent Phone</th><th>UPI</th><th>Graduation Year</th><th>Final Avg%</th><th>Actions</th></tr></thead><tbody id="gradeXListBody"></tbody></table></div></div></div>
 
-        <!-- TRASH -->
+        <!-- ===== TRASH ===== -->
         <div id="trashSection" style="display:none;"><div class="section-card"><div class="section-header"><h3>🗑️ Trash Bin (Deleted Students)</h3><button class="action-btn danger" onclick="window.emptyTrash()">Empty Trash</button></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>#</th><th>Student Code</th><th>Name</th><th>Former Class</th><th>Stream</th><th>Parent Phone</th><th>UPI</th><th>Deleted Date</th><th>Actions</th></tr></thead><tbody id="trashListBody"></tbody></table></div></div></div>
 
-        <!-- PAYMENTS (legacy) -->
+        <!-- ===== PAYMENTS (legacy) ===== -->
         <div id="paymentsSection" style="display:none;"><div class="section-card"><div class="section-header"><h3>💰 Payment Hub</h3><button class="action-btn info" onclick="window.loadPayments()">Refresh</button></div><div class="payment-details-highlight"><i class="fas fa-mobile-alt"></i> Registration fee: KSh 50/student</div><div style="background:#0f3b2c;color:white;padding:20px;border-radius:20px;margin-bottom:20px;text-align:center;"><h3>Total Enrolled</h3><div style="font-size:55px;font-weight:bold;" id="totalStudents">0</div><p>Revenue: KSh <span id="totalRevenue">0</span></p></div><div id="paymentsList"></div></div></div>
 
-        <!-- MARKS ENTRY -->
+        <!-- ===== MARKS ENTRY ===== -->
         <div id="marksSection" style="display:none;">
             <div class="section-card">
                 <div class="section-header">
@@ -1390,16 +1743,34 @@
             </div>
         </div>
 
-        <!-- RANKINGS -->
+        <!-- ===== RANKINGS ===== -->
         <div id="rankingSection" style="display:none;"><div class="section-card"><div class="section-header"><h3>🏅 Class Rankings</h3><div><select id="rankClass"><option>PP1</option><option>PP2</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option></select> <button class="action-btn primary" onclick="window.loadRankings()">View Rankings</button> <button class="action-btn excel" onclick="window.exportRankings()">Export</button></div></div><div id="rankingsContainer"></div></div></div>
 
-        <!-- ATTENDANCE -->
-        <div id="attendanceSection" style="display:none;"><div class="section-card"><div class="section-header"><h3>📅 Weekly Attendance</h3><div><select id="attClass"><option>PP1</option><option>PP2</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option></select> <select id="attStream"><option>North</option><option>South</option><option>East</option><option>West</option></select> <button class="action-btn primary" onclick="window.loadAttendance()">Load Attendance</button></div></div><div id="attendanceContainer"></div></div></div>
+        <!-- ===== ATTENDANCE ===== -->
+        <div id="attendanceSection" style="display:none;">
+            <div class="section-card">
+                <div class="section-header"><h3>📅 Daily Attendance Recording</h3>
+                    <div>
+                        <button class="action-btn primary" onclick="window.loadAttendanceEntry()">Load Today</button>
+                        <button class="action-btn warning" onclick="window.saveAttendance()">💾 Save Attendance</button>
+                        <button class="action-btn info" onclick="window.loadAttendanceHistory()">📊 History</button>
+                    </div>
+                </div>
+                <div class="filter-bar">
+                    <select id="attClass" onchange="window.loadAttendanceEntry()"><option>PP1</option><option>PP2</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option></select>
+                    <select id="attStream" onchange="window.loadAttendanceEntry()"><option>North</option><option>South</option><option>East</option><option>West</option></select>
+                    <input type="date" id="attDate" onchange="window.loadAttendanceEntry()">
+                    <select id="attWeekSelect" onchange="window.loadAttendanceEntry()"></select>
+                </div>
+                <div id="attendanceContainer"></div>
+                <div id="attendanceHistoryContainer" style="margin-top:15px;display:none;"></div>
+            </div>
+        </div>
 
-        <!-- MESSAGES -->
+        <!-- ===== MESSAGES ===== -->
         <div id="messagesSection" style="display:none;"><div class="section-card"><div class="section-header"><h3>📱 Parent Communication</h3></div><div class="filter-bar"><select id="msgClass"><option value="all">All Classes</option><option>PP1</option><option>PP2</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option></select> <select id="msgStream"><option value="all">All Streams</option><option>North</option><option>South</option><option>East</option><option>West</option></select></div><textarea id="msgText" rows="3" style="width:100%;margin:10px 0;padding:10px;border-radius:12px;" placeholder="Type your message here..."></textarea><button class="action-btn whatsapp" onclick="window.sendWhatsApp()"><i class="fab fa-whatsapp"></i> Send via WhatsApp</button><div id="msgStatus" style="margin-top:10px;"></div><div class="section-header" style="margin-top:20px;"><h3>Message History</h3></div><div id="msgHistory"></div></div></div>
 
-        <!-- REPORTS -->
+        <!-- ===== REPORTS ===== -->
         <div id="reportsSection" style="display:none;">
             <div class="section-card">
                 <div class="section-header">
@@ -1431,7 +1802,7 @@
             </div>
         </div>
 
-        <!-- ANALYTICS -->
+        <!-- ===== ANALYTICS ===== -->
         <div id="analyticsSection" style="display:none;">
             <div class="section-card">
                 <div class="section-header"><h3>📊 Analytics Dashboard</h3><button class="action-btn excel" onclick="window.exportAnalytics()">Export</button></div>
@@ -1447,21 +1818,16 @@
                 <div class="analytics-chart"><canvas id="gradeChart"></canvas></div>
                 <div id="gradeDistributionAnalytics" style="margin-top:20px;"></div>
                 <div id="streamPerformanceAnalytics"></div>
-                <div id="topPerSubjectContainer"></div>
-                <div id="subjectStreamContainer"></div>
                 <div id="bestStreamPerSubject" style="margin-top:20px;"></div>
                 <div id="bestStudentsPerSubject" style="margin-top:20px;"></div>
                 <div id="midDeviationContainer" style="margin-top:20px;"></div>
             </div>
         </div>
 
-        <!-- ========== NEW MODULES ========== -->
-
-        <!-- PARENTS MODULE -->
+        <!-- ===== PARENTS ===== -->
         <div id="parentsSection" style="display:none;">
             <div class="section-card">
-                <div class="section-header">
-                    <h3>👪 Parent Portal Management</h3>
+                <div class="section-header"><h3>👪 Parent Portal Management</h3>
                     <div>
                         <button class="action-btn primary" onclick="window.openAddParent()">+ Add Parent</button>
                         <button class="action-btn info" onclick="window.loadParents()">Refresh</button>
@@ -1477,25 +1843,15 @@
                     </table>
                 </div>
             </div>
-            <!-- Parent Dashboard (Admin preview) -->
             <div class="section-card">
                 <div class="section-header"><h3>📊 Parent Dashboard Preview</h3><button class="action-btn info" onclick="window.loadParentDashboard()">Refresh</button></div>
-                <div id="parentDashboardPreview">
-                    <p style="color:#64748b;text-align:center;padding:20px;">Select a parent from the list above to view their dashboard.</p>
-                </div>
+                <div id="parentDashboardPreview"><p style="color:#64748b;text-align:center;padding:20px;">Select a parent from the list above to view their dashboard.</p></div>
             </div>
-            <!-- Parent-Teacher Chat -->
             <div class="section-card">
                 <div class="section-header"><h3>💬 Parent-Teacher Chat</h3></div>
-                <div style="display:grid;grid-template-columns:1fr 2fr;gap:15px;">
-                    <div>
-                        <label>Select Parent:</label>
-                        <select id="chatParentSelect" onchange="window.loadChatMessages()" style="width:100%;"></select>
-                    </div>
-                    <div>
-                        <label>Select Teacher:</label>
-                        <select id="chatTeacherSelect" onchange="window.loadChatMessages()" style="width:100%;"></select>
-                    </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+                    <div><label>Select Parent:</label><select id="chatParentSelect" onchange="window.loadChatMessages()" style="width:100%;"></select></div>
+                    <div><label>Select Teacher:</label><select id="chatTeacherSelect" onchange="window.loadChatMessages()" style="width:100%;"></select></div>
                 </div>
                 <div id="chatContainer" class="chat-container" style="margin-top:10px;height:300px;overflow-y:auto;">
                     <p style="color:#94a3b8;text-align:center;padding:20px;">Select a parent and teacher to view conversation.</p>
@@ -1507,11 +1863,10 @@
             </div>
         </div>
 
-        <!-- FEES MODULE -->
+        <!-- ===== FEES ===== -->
         <div id="feesSection" style="display:none;">
             <div class="section-card">
-                <div class="section-header">
-                    <h3>💰 Fee & Payment Management</h3>
+                <div class="section-header"><h3>💰 Fee & Payment Management</h3>
                     <div>
                         <button class="action-btn primary" onclick="window.openAddFeeStructure()">+ Add Fee Structure</button>
                         <button class="action-btn warning" onclick="window.openAddPayment()">💳 Record Payment</button>
@@ -1519,33 +1874,24 @@
                         <button class="action-btn whatsapp" onclick="window.sendBulkFeeReminders()">📱 Bulk Reminders</button>
                     </div>
                 </div>
-                <!-- Fee Structures -->
                 <div class="section-header" style="margin-top:10px;"><h4>📋 Fee Structures</h4></div>
                 <div id="feeStructuresContainer"></div>
-                <!-- Student Fee Tracking -->
                 <div class="section-header" style="margin-top:15px;"><h4>👩‍🎓 Student Fee Tracking</h4></div>
                 <div class="filter-bar">
                     <select id="feeStudentClass" onchange="window.loadFeeStudents()"><option value="">All Classes</option><option>PP1</option><option>PP2</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option></select>
                     <select id="feeStudentStream" onchange="window.loadFeeStudents()"><option value="">All Streams</option></select>
                     <button class="action-btn info" onclick="window.loadFeeStudents()">Load</button>
                 </div>
-                <div class="table-wrapper">
-                    <table class="data-table">
-                        <thead><tr><th>Student</th><th>Class</th><th>Stream</th><th>Total Fee</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
-                        <tbody id="feeStudentsBody"></tbody>
-                    </table>
-                </div>
-                <!-- Payment History -->
+                <div class="table-wrapper"><table class="data-table"><thead><tr><th>Student</th><th>Class</th><th>Stream</th><th>Total Fee</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead><tbody id="feeStudentsBody"></tbody></table></div>
                 <div class="section-header" style="margin-top:15px;"><h4>📜 Payment History</h4></div>
                 <div id="paymentHistoryContainer"></div>
             </div>
         </div>
 
-        <!-- EXAMS MODULE -->
+        <!-- ===== EXAMS ===== -->
         <div id="examsSection" style="display:none;">
             <div class="section-card">
-                <div class="section-header">
-                    <h3>📝 Exam / Assessment Management</h3>
+                <div class="section-header"><h3>📝 Exam / Assessment Management</h3>
                     <div>
                         <button class="action-btn primary" onclick="window.openAddExam()">+ Add Exam</button>
                         <button class="action-btn info" onclick="window.loadExams()">Refresh</button>
@@ -1557,7 +1903,6 @@
                     <button class="action-btn primary" onclick="window.loadExams()">Load Exams</button>
                 </div>
                 <div id="examsContainer"></div>
-                <!-- Exam Marks Entry -->
                 <div class="section-header" style="margin-top:15px;"><h4>✏️ Enter Exam Marks</h4></div>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
                     <select id="examMarkExam" onchange="window.loadExamMarks()"><option value="">Select Exam</option></select>
@@ -1570,11 +1915,10 @@
             </div>
         </div>
 
-        <!-- TIMETABLE MODULE -->
+        <!-- ===== TIMETABLE ===== -->
         <div id="timetableSection" style="display:none;">
             <div class="section-card">
-                <div class="section-header">
-                    <h3>📅 Timetable Management</h3>
+                <div class="section-header"><h3>📅 Timetable Management</h3>
                     <div>
                         <button class="action-btn primary" onclick="window.openAddTimetable()">+ Add Timetable</button>
                         <button class="action-btn info" onclick="window.loadTimetables()">Refresh</button>
@@ -1589,11 +1933,10 @@
             </div>
         </div>
 
-        <!-- STAFF MODULE -->
+        <!-- ===== STAFF ===== -->
         <div id="staffSection" style="display:none;">
             <div class="section-card">
-                <div class="section-header">
-                    <h3>👔 Staff Management</h3>
+                <div class="section-header"><h3>👔 Staff Management</h3>
                     <div>
                         <button class="action-btn primary" onclick="window.openAddStaff()">+ Add Staff</button>
                         <button class="action-btn info" onclick="window.loadStaff()">Refresh</button>
@@ -1601,22 +1944,16 @@
                 </div>
                 <div class="filter-bar">
                     <input type="text" id="staffSearch" placeholder="Search by name or role..." onkeyup="window.filterStaff()" style="flex:2;">
-                    <select id="staffRoleFilter" onchange="window.filterStaff()"><option value="">All Roles</option><option>Accountant</option><option>Librarian</option><option>Administrator</option><option>Teacher</option><option>Super Admin</option></select>
+                    <select id="staffRoleFilter" onchange="window.filterStaff()"><option value="">All Roles</option><option>Accountant</option><option>Librarian</option><option>Administrator</option><option>Nurse</option><option>Super Admin</option></select>
                 </div>
-                <div class="table-wrapper">
-                    <table class="data-table">
-                        <thead><tr><th>#</th><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead>
-                        <tbody id="staffListBody"></tbody>
-                    </table>
-                </div>
+                <div class="table-wrapper"><table class="data-table"><thead><tr><th>#</th><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead><tbody id="staffListBody"></tbody></table></div>
             </div>
         </div>
 
-        <!-- LIBRARY MODULE -->
+        <!-- ===== LIBRARY ===== -->
         <div id="librarySection" style="display:none;">
             <div class="section-card">
-                <div class="section-header">
-                    <h3>📚 Library Management</h3>
+                <div class="section-header"><h3>📚 Library Management</h3>
                     <div>
                         <button class="action-btn primary" onclick="window.openAddBook()">+ Add Book</button>
                         <button class="action-btn warning" onclick="window.openBorrowBook()">📖 Borrow Book</button>
@@ -1634,11 +1971,10 @@
             </div>
         </div>
 
-        <!-- HOMEWORK MODULE -->
+        <!-- ===== HOMEWORK ===== -->
         <div id="homeworkSection" style="display:none;">
             <div class="section-card">
-                <div class="section-header">
-                    <h3>📝 Homework / Assignment Management</h3>
+                <div class="section-header"><h3>📝 Homework / Assignment Management</h3>
                     <div>
                         <button class="action-btn primary" onclick="window.openAddHomework()">+ Add Assignment</button>
                         <button class="action-btn info" onclick="window.loadHomework()">Refresh</button>
@@ -1653,11 +1989,10 @@
             </div>
         </div>
 
-        <!-- TRANSPORT MODULE -->
+        <!-- ===== TRANSPORT ===== -->
         <div id="transportSection" style="display:none;">
             <div class="section-card">
-                <div class="section-header">
-                    <h3>🚌 Transport Management</h3>
+                <div class="section-header"><h3>🚌 Transport Management</h3>
                     <div>
                         <button class="action-btn primary" onclick="window.openAddBusRoute()">+ Add Route</button>
                         <button class="action-btn info" onclick="window.loadTransport()">Refresh</button>
@@ -1667,11 +2002,11 @@
             </div>
         </div>
 
-        <!-- SETTINGS -->
+        <!-- ===== SETTINGS ===== -->
         <div id="settingsSection" style="display:none;">
             <div class="section-card">
                 <div class="section-header"><h3>⚙️ School Settings</h3></div>
-                <div style="max-width:450px;">
+                <div style="max-width:600px;">
                     <label>School Name</label>
                     <input type="text" id="setSchoolName">
                     <label>MOE Code</label>
@@ -1686,25 +2021,33 @@
                     <input type="date" id="setOpeningDate">
                     <label>Closing Date</label>
                     <input type="date" id="setClosingDate">
+                    <label>Number of Weeks in Term</label>
+                    <input type="number" id="setWeeksInTerm" value="13" min="1" max="20">
                     <label>Default Class Teacher (Fallback)</label>
                     <input type="text" id="setTeacher">
                     <label>Head Teacher</label>
                     <input type="text" id="setHeadTeacher">
-                    <button class="action-btn primary" onclick="window.saveSettings()" style="margin-top:15px;">Save Settings</button>
-                    <button class="action-btn info" onclick="window.forceSync()" style="margin-top:10px;width:100%;justify-content:center;"><i class="fas fa-sync-alt"></i> Sync Now (Force Refresh)</button>
                     <hr style="margin:20px 0;">
-                    <div style="margin-top:20px;"><h4 style="margin-bottom:10px;">📊 Stream Management</h4><div id="streamManagementContainer"></div><button class="action-btn primary" onclick="window.addNewStream()" style="margin-top:10px;">+ Add New Stream</button></div>
+                    <h4 style="margin-bottom:10px;">💰 Fee Structure per Grade</h4>
+                    <div id="feeStructureSettingsContainer"></div>
+                    <button class="action-btn primary" onclick="window.saveFeeStructureSettings()" style="margin-top:10px;">Save Fee Structure</button>
+                    <hr style="margin:20px 0;">
+                    <h4 style="margin-bottom:10px;">📊 Stream Management</h4>
+                    <div id="streamManagementContainer"></div>
+                    <button class="action-btn primary" onclick="window.addNewStream()" style="margin-top:10px;">+ Add New Stream</button>
                     <hr style="margin:20px 0;">
                     <button class="action-btn info" onclick="window.promoteAll()">Promote All Students</button>
                     <button class="action-btn danger" onclick="window.resetData()">Reset All Data</button>
+                    <button class="action-btn primary" onclick="window.saveSettings()" style="margin-top:15px;width:100%;justify-content:center;">Save All Settings</button>
+                    <button class="action-btn info" onclick="window.forceSync()" style="margin-top:10px;width:100%;justify-content:center;"><i class="fas fa-sync-alt"></i> Sync Now (Force Refresh)</button>
                 </div>
             </div>
         </div>
         <footer>© 2025 EduNexa Pro | Developed by Blessing Kijana 0718899014 | MOE Compliant CBE + Boarding | PP1 - Grade 9 + Grade X</footer>
     </div>
 
-    <!-- MODALS -->
-    <div id="studentModal" class="modal"><div class="modal-content"><h3>Register New Student</h3><input type="text" id="studentName" placeholder="Full Name" style="width:100%;margin:10px 0;"><input type="tel" id="parentPhone" placeholder="Parent Phone" style="width:100%;margin:10px 0;"><select id="studentClass" style="width:100%;margin:10px 0;"><option>PP1</option><option>PP2</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option></select><select id="studentStream" style="width:100%;margin:10px 0;"></select><input type="text" id="upiInput" placeholder="UPI / Assessment Number (e.g., P123456789)" style="width:100%;margin:10px 0;" required><input type="text" id="assessmentNoInput" placeholder="Student Code / Assessment No. (e.g., SKY-001234)" style="width:100%;margin:10px 0;" required><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.addStudent()">Register</button><button class="action-btn" onclick="window.closeModal('studentModal')">Cancel</button></div></div></div>
+    <!-- ===== MODALS ===== -->
+    <div id="studentModal" class="modal"><div class="modal-content"><h3>Register New Student</h3><input type="text" id="studentName" placeholder="Full Name" style="width:100%;margin:10px 0;"><input type="tel" id="parentPhone" placeholder="Parent Phone" style="width:100%;margin:10px 0;"><select id="studentClass" style="width:100%;margin:10px 0;"><option>PP1</option><option>PP2</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option></select><select id="studentStream" style="width:100%;margin:10px 0;"></select><input type="text" id="upiInput" placeholder="UPI / Assessment Number" style="width:100%;margin:10px 0;" required><input type="text" id="assessmentNoInput" placeholder="Student Code" style="width:100%;margin:10px 0;" required><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.addStudent()">Register</button><button class="action-btn" onclick="window.closeModal('studentModal')">Cancel</button></div></div></div>
     <div id="bulkPaymentModal" class="modal"><div class="modal-content"><h3>Bulk Registration</h3><div id="bulkStudentsList"></div><button class="action-btn primary" onclick="window.addBulkStudentRow()">+ Add Student</button><div style="margin-top:15px;"><button class="action-btn primary" onclick="window.processBulkRegistration()">Register All</button><button class="action-btn" onclick="window.closeModal('bulkPaymentModal')">Cancel</button></div></div></div>
     <div id="teacherModal" class="modal"><div class="modal-content"><h3>Add Class Teacher</h3><input type="text" id="teacherName" placeholder="Class Teacher Name" style="width:100%;margin:10px 0;"><select id="teacherGrade" style="width:100%;margin:10px 0;"><option>PP1</option><option>PP2</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option></select><select id="teacherStream" style="width:100%;margin:10px 0;"></select><input type="tel" id="teacherPhone" placeholder="Phone Number" style="width:100%;margin:10px 0;"><input type="email" id="teacherEmail" placeholder="Email (used for login)" style="width:100%;margin:10px 0;"><input type="password" id="teacherPassword" placeholder="Password (min 6 chars)" style="width:100%;margin:10px 0;"><input type="password" id="teacherConfirmPassword" placeholder="Confirm Password" style="width:100%;margin:10px 0;"><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.addTeacher()">Save Class Teacher</button><button class="action-btn" onclick="window.closeModal('teacherModal')">Cancel</button></div></div></div>
     <div id="resetTeacherPasswordModal" class="modal"><div class="modal-content"><h3>Reset Teacher Password</h3><p style="color:#64748b;margin-bottom:10px;">Enter a new password for <strong id="resetTeacherName"></strong></p><input type="password" id="resetTeacherNewPassword" placeholder="New Password (min 6 chars)" style="width:100%;margin:10px 0;"><input type="password" id="resetTeacherConfirmPassword" placeholder="Confirm New Password" style="width:100%;margin:10px 0;"><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.resetTeacherPassword()">Reset Password</button><button class="action-btn" onclick="window.closeModal('resetTeacherPasswordModal')">Cancel</button></div></div></div>
@@ -1715,29 +2058,30 @@
     <div id="resetPasswordModal" class="modal"><div class="modal-content" style="max-width:500px;"><h3><i class="fas fa-key" style="color:#0284c7;"></i> Reset Password</h3><div id="resetStatus" style="margin:10px 0;"></div><div class="reset-progress"><div class="step-dot active" id="step1dot">1</div><div class="step-line" id="line1"></div><div class="step-dot" id="step2dot">2</div><div class="step-line" id="line2"></div><div class="step-dot" id="step3dot">3</div></div><div id="resetStep1" class="reset-step active"><p style="margin-bottom:15px;color:#64748b;">Enter your registered email address to receive a password reset link.</p><input type="email" id="resetEmail" placeholder="School Email" style="width:100%;margin:10px 0;"><button class="action-btn primary" onclick="window.sendResetEmail()" style="width:100%;justify-content:center;">Send Reset Link</button><div style="margin-top:10px;text-align:center;"><span class="forgot-password-link" onclick="window.closeModal('resetPasswordModal')"><i class="fas fa-arrow-left"></i> Back to Login</span></div></div><div id="resetStep2" class="reset-step"><p style="margin-bottom:15px;color:#64748b;">Please answer your security questions to verify your identity.</p><div id="securityQuestionsContainer"><label id="resetQuestion1" style="font-weight:500;">Question 1</label><input type="text" id="resetAnswer1" placeholder="Your answer" style="width:100%;margin:8px 0;"><label id="resetQuestion2" style="font-weight:500;margin-top:10px;">Question 2</label><input type="text" id="resetAnswer2" placeholder="Your answer" style="width:100%;margin:8px 0;"></div><button class="action-btn primary" onclick="window.verifySecurityAnswers()" style="width:100%;justify-content:center;">Verify & Continue</button><div style="margin-top:10px;text-align:center;"><span class="forgot-password-link" onclick="window.goToResetStep(1)"><i class="fas fa-arrow-left"></i> Back</span></div></div><div id="resetStep3" class="reset-step"><p style="margin-bottom:15px;color:#64748b;">Enter your new password (minimum 6 characters).</p><input type="password" id="resetNewPassword" placeholder="New Password (min 6)" style="width:100%;margin:10px 0;"><input type="password" id="resetConfirmPassword" placeholder="Confirm New Password" style="width:100%;margin:10px 0;"><button class="action-btn primary" onclick="window.updatePassword()" style="width:100%;justify-content:center;">Update Password</button><div style="margin-top:10px;text-align:center;"><span class="forgot-password-link" onclick="window.closeModal('resetPasswordModal')"><i class="fas fa-arrow-left"></i> Back to Login</span></div></div></div></div>
     <div id="importModal" class="modal"><div class="modal-content"><h3><i class="fas fa-file-import" style="color:#0f7b3a;"></i> Import Marks from Excel</h3><div id="importStatus" style="margin:10px 0;padding:10px;border-radius:8px;display:none;"></div><div id="importDropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault();" ondrop="handleDrop(event)"><i class="fas fa-cloud-upload-alt"></i><p><strong>Click to upload</strong> or drag and drop your Excel file here</p><p style="font-size:12px;color:#94a3b8;">Supported formats: .xlsx, .xls</p><input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFileSelect(event)"></div><div id="importPreviewContainer" style="display:none;margin-top:15px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><h4 style="margin:0;">📊 Preview</h4><span id="importSummary" style="font-size:13px;color:#64748b;"></span></div><div class="import-preview-table" id="importPreviewTable"></div><div style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;"><button class="action-btn primary" id="confirmImportBtn" onclick="confirmImport()" disabled>✅ Confirm Import</button><button class="action-btn" onclick="closeModal('importModal')">Cancel</button></div></div></div></div>
 
-    <!-- NEW MODULE MODALS -->
-    <!-- Parent Modal -->
+    <!-- ===== NEW MODULE MODALS ===== -->
     <div id="parentModal" class="modal"><div class="modal-content"><h3>Add Parent Account</h3><input type="text" id="parentName" placeholder="Full Name" style="width:100%;margin:10px 0;"><input type="email" id="parentEmail" placeholder="Email Address" style="width:100%;margin:10px 0;"><input type="tel" id="parentPhone" placeholder="Phone Number" style="width:100%;margin:10px 0;"><input type="password" id="parentPassword" placeholder="Password (min 6 chars)" style="width:100%;margin:10px 0;"><input type="password" id="parentConfirmPassword" placeholder="Confirm Password" style="width:100%;margin:10px 0;"><label>Link to Students:</label><div id="parentStudentLinks" style="max-height:200px;overflow-y:auto;border:1px solid #ddd;border-radius:12px;padding:10px;margin:10px 0;"></div><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveParent()">Save Parent</button><button class="action-btn" onclick="window.closeModal('parentModal')">Cancel</button></div></div></div>
-    <!-- Fee Structure Modal -->
-    <div id="feeStructureModal" class="modal"><div class="modal-content"><h3>Add Fee Structure</h3><select id="feeGrade" style="width:100%;margin:10px 0;"><option>PP1</option><option>PP2</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option></select><select id="feeStream" style="width:100%;margin:10px 0;"></select><input type="text" id="feeCategory" placeholder="Category (e.g., Tuition, Boarding, Transport)" style="width:100%;margin:10px 0;"><input type="number" id="feeAmount" placeholder="Amount (KSh)" style="width:100%;margin:10px 0;"><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveFeeStructure()">Save</button><button class="action-btn" onclick="window.closeModal('feeStructureModal')">Cancel</button></div></div></div>
-    <!-- Payment Modal -->
+    <div id="feeStructureModal" class="modal"><div class="modal-content"><h3>Add Fee Structure</h3><select id="feeGrade" style="width:100%;margin:10px 0;"><option>PP1</option><option>PP2</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option></select><select id="feeStream" style="width:100%;margin:10px 0;"></select><input type="text" id="feeCategory" placeholder="Category (e.g., Tuition, Boarding)" style="width:100%;margin:10px 0;"><input type="number" id="feeAmount" placeholder="Amount (KSh)" style="width:100%;margin:10px 0;"><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveFeeStructure()">Save</button><button class="action-btn" onclick="window.closeModal('feeStructureModal')">Cancel</button></div></div></div>
     <div id="paymentModal" class="modal"><div class="modal-content"><h3>Record Payment</h3><select id="paymentStudent" style="width:100%;margin:10px 0;"></select><input type="number" id="paymentAmount" placeholder="Amount (KSh)" style="width:100%;margin:10px 0;"><input type="date" id="paymentDate" style="width:100%;margin:10px 0;"><select id="paymentMethod" style="width:100%;margin:10px 0;"><option>Cash</option><option>M-Pesa</option><option>Bank Transfer</option><option>Cheque</option><option>Other</option></select><textarea id="paymentNotes" placeholder="Notes (optional)" style="width:100%;margin:10px 0;padding:10px;border-radius:12px;"></textarea><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.savePayment()">Record Payment</button><button class="action-btn" onclick="window.closeModal('paymentModal')">Cancel</button></div></div></div>
-    <!-- Exam Modal -->
-    <div id="examModal" class="modal"><div class="modal-content"><h3>Add Exam</h3><input type="text" id="examName" placeholder="Exam Name" style="width:100%;margin:10px 0;"><select id="examType" style="width:100%;margin:10px 0;"><option>End-term</option><option>Mid-term</option><option>CAT</option><option>Assignment</option></select><select id="examGrade" style="width:100%;margin:10px 0;"><option>PP1</option><option>PP2</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option></select><select id="examStream" style="width:100%;margin:10px 0;"></select><input type="date" id="examDate" style="width:100%;margin:10px 0;"><input type="number" id="examWeight" placeholder="Weight (%) contribution to final grade" style="width:100%;margin:10px 0;"><div id="examSubjectsContainer" style="margin:10px 0;"></div><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveExam()">Save Exam</button><button class="action-btn" onclick="window.closeModal('examModal')">Cancel</button></div></div></div>
-    <!-- Timetable Modal -->
+    <div id="examModal" class="modal"><div class="modal-content"><h3>Add Exam</h3><input type="text" id="examName" placeholder="Exam Name" style="width:100%;margin:10px 0;"><select id="examType" style="width:100%;margin:10px 0;"><option>End-term</option><option>Mid-term</option><option>CAT</option><option>Assignment</option></select><select id="examGrade" style="width:100%;margin:10px 0;"><option>PP1</option><option>PP2</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option></select><select id="examStream" style="width:100%;margin:10px 0;"></select><input type="date" id="examDate" style="width:100%;margin:10px 0;"><input type="number" id="examWeight" placeholder="Weight (%)" style="width:100%;margin:10px 0;"><div id="examSubjectsContainer" style="margin:10px 0;"></div><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveExam()">Save Exam</button><button class="action-btn" onclick="window.closeModal('examModal')">Cancel</button></div></div></div>
     <div id="timetableModal" class="modal"><div class="modal-content"><h3>Add Timetable</h3><select id="ttGrade" style="width:100%;margin:10px 0;"><option>PP1</option><option>PP2</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option></select><select id="ttStream" style="width:100%;margin:10px 0;"></select><select id="ttDay" style="width:100%;margin:10px 0;"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option></select><input type="time" id="ttStartTime" style="width:100%;margin:10px 0;"><input type="time" id="ttEndTime" style="width:100%;margin:10px 0;"><input type="text" id="ttSubject" placeholder="Subject" style="width:100%;margin:10px 0;"><input type="text" id="ttTeacher" placeholder="Teacher Name" style="width:100%;margin:10px 0;"><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveTimetable()">Save</button><button class="action-btn" onclick="window.closeModal('timetableModal')">Cancel</button></div></div></div>
-    <!-- Staff Modal -->
-    <div id="staffModal" class="modal"><div class="modal-content"><h3>Add Staff Member</h3><input type="text" id="staffName" placeholder="Full Name" style="width:100%;margin:10px 0;"><select id="staffRole" style="width:100%;margin:10px 0;"><option>Accountant</option><option>Librarian</option><option>Administrator</option><option>Teacher</option><option>Super Admin</option></select><input type="email" id="staffEmail" placeholder="Email Address" style="width:100%;margin:10px 0;"><input type="tel" id="staffPhone" placeholder="Phone Number" style="width:100%;margin:10px 0;"><input type="password" id="staffPassword" placeholder="Password (min 6 chars)" style="width:100%;margin:10px 0;"><input type="password" id="staffConfirmPassword" placeholder="Confirm Password" style="width:100%;margin:10px 0;"><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveStaff()">Save Staff</button><button class="action-btn" onclick="window.closeModal('staffModal')">Cancel</button></div></div></div>
-    <!-- Book Modal -->
+    <div id="staffModal" class="modal"><div class="modal-content"><h3>Add Staff Member</h3><input type="text" id="staffName" placeholder="Full Name" style="width:100%;margin:10px 0;"><select id="staffRole" style="width:100%;margin:10px 0;"><option>Accountant</option><option>Librarian</option><option>Administrator</option><option>Nurse</option><option>Super Admin</option></select><input type="email" id="staffEmail" placeholder="Email Address" style="width:100%;margin:10px 0;"><input type="tel" id="staffPhone" placeholder="Phone Number" style="width:100%;margin:10px 0;"><input type="password" id="staffPassword" placeholder="Password (min 6 chars)" style="width:100%;margin:10px 0;"><input type="password" id="staffConfirmPassword" placeholder="Confirm Password" style="width:100%;margin:10px 0;"><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveStaff()">Save Staff</button><button class="action-btn" onclick="window.closeModal('staffModal')">Cancel</button></div></div></div>
     <div id="bookModal" class="modal"><div class="modal-content"><h3>Add Book</h3><input type="text" id="bookTitle" placeholder="Title" style="width:100%;margin:10px 0;"><input type="text" id="bookAuthor" placeholder="Author" style="width:100%;margin:10px 0;"><input type="text" id="bookISBN" placeholder="ISBN" style="width:100%;margin:10px 0;"><select id="bookCategory" style="width:100%;margin:10px 0;"><option>Fiction</option><option>Non-Fiction</option><option>Textbook</option><option>Reference</option><option>Children</option><option>Science</option><option>History</option><option>Mathematics</option><option>Literature</option></select><input type="number" id="bookCopies" placeholder="Total Copies" style="width:100%;margin:10px 0;"><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveBook()">Add Book</button><button class="action-btn" onclick="window.closeModal('bookModal')">Cancel</button></div></div></div>
-    <!-- Borrow Modal -->
     <div id="borrowModal" class="modal"><div class="modal-content"><h3>Borrow Book</h3><select id="borrowBook" style="width:100%;margin:10px 0;"></select><select id="borrowStudent" style="width:100%;margin:10px 0;"></select><input type="date" id="borrowDueDate" style="width:100%;margin:10px 0;"><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveBorrow()">Borrow</button><button class="action-btn" onclick="window.closeModal('borrowModal')">Cancel</button></div></div></div>
-    <!-- Homework Modal -->
     <div id="homeworkModal" class="modal"><div class="modal-content"><h3>Add Assignment</h3><input type="text" id="hwTitle" placeholder="Assignment Title" style="width:100%;margin:10px 0;"><textarea id="hwDescription" placeholder="Description" style="width:100%;margin:10px 0;padding:10px;border-radius:12px;" rows="3"></textarea><select id="hwGrade" style="width:100%;margin:10px 0;"><option>PP1</option><option>PP2</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option></select><select id="hwStream" style="width:100%;margin:10px 0;"></select><input type="date" id="hwDueDate" style="width:100%;margin:10px 0;"><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveHomework()">Add Assignment</button><button class="action-btn" onclick="window.closeModal('homeworkModal')">Cancel</button></div></div></div>
-    <!-- Bus Route Modal -->
     <div id="busRouteModal" class="modal"><div class="modal-content"><h3>Add Bus Route</h3><input type="text" id="busRouteName" placeholder="Route Name (e.g., Route A)" style="width:100%;margin:10px 0;"><input type="text" id="busNumber" placeholder="Bus Number" style="width:100%;margin:10px 0;"><input type="text" id="busStops" placeholder="Stops (comma separated)" style="width:100%;margin:10px 0;"><select id="busStudents" multiple style="width:100%;margin:10px 0;height:150px;"></select><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveBusRoute()">Save Route</button><button class="action-btn" onclick="window.closeModal('busRouteModal')">Cancel</button></div></div></div>
+    <!-- Boarding sub-modals -->
+    <div id="dormitoryModal" class="modal"><div class="modal-content"><h3>🏢 Dormitory Management</h3><input type="text" id="dormName" placeholder="Dormitory Name" style="width:100%;margin:10px 0;"><input type="number" id="dormCapacity" placeholder="Capacity" style="width:100%;margin:10px 0;"><select id="dormStudents" multiple style="width:100%;margin:10px 0;height:150px;"></select><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveDormitory()">Save Dormitory</button><button class="action-btn" onclick="window.closeModal('dormitoryModal')">Cancel</button></div></div></div>
+    <div id="mealModal" class="modal"><div class="modal-content"><h3>🍽️ Meal Record</h3><select id="mealStudent" style="width:100%;margin:10px 0;"></select><select id="mealType" style="width:100%;margin:10px 0;"><option>Breakfast</option><option>Lunch</option><option>Supper</option></select><input type="date" id="mealDate" style="width:100%;margin:10px 0;"><select id="mealStatus" style="width:100%;margin:10px 0;"><option>Present</option><option>Absent</option></select><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveMealRecord()">Save</button><button class="action-btn" onclick="window.closeModal('mealModal')">Cancel</button></div></div></div>
+    <div id="healthModal" class="modal"><div class="modal-content"><h3>🏥 Health Record</h3><select id="healthStudent" style="width:100%;margin:10px 0;"></select><input type="text" id="healthCondition" placeholder="Condition / Illness" style="width:100%;margin:10px 0;"><textarea id="healthNotes" placeholder="Notes / Medication" style="width:100%;margin:10px 0;padding:10px;border-radius:12px;" rows="3"></textarea><input type="date" id="healthDate" style="width:100%;margin:10px 0;"><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveHealthRecord()">Save</button><button class="action-btn" onclick="window.closeModal('healthModal')">Cancel</button></div></div></div>
+    <div id="gatepassModal" class="modal"><div class="modal-content"><h3>🚪 Gate Pass Request</h3><select id="gateStudent" style="width:100%;margin:10px 0;"></select><input type="text" id="gateReason" placeholder="Reason for leaving" style="width:100%;margin:10px 0;"><input type="datetime-local" id="gateOutTime" style="width:100%;margin:10px 0;"><input type="datetime-local" id="gateReturnTime" style="width:100%;margin:10px 0;"><div style="display:flex;gap:10px;"><button class="action-btn primary" onclick="window.saveGatePass()">Request</button><button class="action-btn" onclick="window.closeModal('gatepassModal')">Cancel</button></div></div></div>
 
     <script>
+        // ======================================================================
+        //  EDUNEXA PRO – COMPLETE SURGICAL FIX with PERMISSION HANDLING
+        //  All modules: Parent Portal, Staff Portal, Attendance, Fees, Boarding, etc.
+        //  Enhanced error handling, caching, and retry mechanism.
+        // ======================================================================
+
         // ==================== FIREBASE CONFIG ====================
         const firebaseConfig = {
             apiKey: "AIzaSyDrl4NXoDMygB8JBvffWex6owEf2y8_bjI",
@@ -1750,6 +2094,7 @@
 
         let auth, db;
         let currentUser = null;
+        let currentUserRole = 'admin'; // admin, parent, teacher, staff
         let students = [];
         let deletedStudents = [];
         let gradeXStudents = [];
@@ -1764,7 +2109,9 @@
             moeCode: "",
             openingDate: "",
             closingDate: "",
-            streams: ["North", "South", "East", "West"]
+            streams: ["North", "South", "East", "West"],
+            weeksInTerm: 13,
+            feeStructure: {}
         };
         let nextCode = 1;
         let isDemo = false;
@@ -1772,7 +2119,7 @@
         let gradeChart = null;
         let markSheets = [{ name: "Sheet1", data: {} }];
         let currentSheetIndex = 0;
-        let boardingData = { dormitory: {}, meals: {}, health: {}, gatepass: {} };
+        let boardingData = { dormitories: [], meals: [], health: [], gatepasses: [] };
         let unsubscribeListener = null;
         let refreshInterval = null;
 
@@ -1791,6 +2138,17 @@
         let busAttendance = [];
         let notifications = [];
         let chatMessages = [];
+        let attendanceRecords = [];
+        let dormitories = [];
+        let meals = [];
+        let healthRecords = [];
+        let gatepasses = [];
+
+        // ===== CACHING & RETRY =====
+        let dataLoaded = false;
+        let loadAttempts = 0;
+        const MAX_RETRIES = 3;
+        const RETRY_DELAY = 5000; // 5 seconds
 
         // ===== IMPORT GLOBALS =====
         let importFileData = null;
@@ -1818,6 +2176,7 @@
             "Psychomotor Activities": "PSYCH"
         };
 
+        // ==================== FIREBASE INIT ====================
         try {
             if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
             auth = firebase.auth();
@@ -1836,8 +2195,8 @@
         // ==================== HELPERS ====================
         function safeToLower(str) { return (str || '').toLowerCase(); }
 
-        function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' :
-                '&gt;'); }
+        function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ?
+                '&lt;' : '&gt;'); }
 
         function showToast(msg, isErr) {
             try {
@@ -1846,7 +2205,7 @@
                 t.style.background = isErr ? "#dc2626" : "#166534";
                 t.innerHTML = msg;
                 document.body.appendChild(t);
-                setTimeout(() => { if (t.parentNode) t.remove(); }, 3000);
+                setTimeout(() => { if (t.parentNode) t.remove(); }, 4000);
             } catch (e) { console.error("Toast error:", e); }
         }
 
@@ -1862,6 +2221,7 @@
 
         function genCode() { let code = `SKY-${String(nextCode).padStart(6,'0')}`; nextCode++; return code; }
 
+        // ===== SUBJECTS =====
         const subjectsMap = {
             prePrimary: ["Language Activities", "Mathematical Activities", "Environmental Activities",
                 "Psychomotor Activities", "Religious Education"
@@ -1924,6 +2284,16 @@
                 "South", "East", "West"
             ]; }
 
+        function getWeekNumber(dateStr) {
+            if (!settings.openingDate) return 1;
+            const start = new Date(settings.openingDate);
+            const d = new Date(dateStr);
+            const diff = Math.floor((d - start) / (7 * 86400000));
+            return Math.min(Math.max(diff + 1, 1), settings.weeksInTerm || 13);
+        }
+
+        function getTerm() { return `${settings.term || 'Term 2'}, ${settings.year || '2025'}`; }
+
         function ensureAllStudentsPresent() {
             try {
                 const validGrades = ["PP1", "PP2", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6",
@@ -1934,29 +2304,44 @@
                 const defaultStream = validStreams[0] || "North";
                 let fixedCount = 0;
                 students.forEach(student => {
-                    if (!student.class || !validGrades.includes(student.class)) {
-                        student.class = defaultGrade;
-                        fixedCount++;
-                    }
-                    if (!student.stream || !validStreams.includes(student.stream)) {
-                        student.stream = defaultStream;
-                        fixedCount++;
-                    }
+                    if (!student.class || !validGrades.includes(student.class)) { student.class = defaultGrade;
+                        fixedCount++; }
+                    if (!student.stream || !validStreams.includes(student.stream)) { student.stream = defaultStream;
+                        fixedCount++; }
                     if (!student.studentCode) { student.studentCode = genCode();
                         fixedCount++; }
                     if (!student.admNo) { student.admNo = `UPI${Date.now()}${Math.floor(Math.random()*1000)}`;
                         fixedCount++; }
                 });
-                if (fixedCount > 0) { console.log(`✅ Fixed ${fixedCount} students with missing/invalid data`);
-                    saveToFirebase(); }
-            } catch (e) { console.error("Error in ensureAllStudentsPresent:", e); }
+                if (fixedCount > 0) { console.log(`✅ Fixed ${fixedCount} students`); }
+            } catch (e) { console.error("ensureAllStudentsPresent error:", e); }
         }
 
-        // ==================== FIREBASE CRUD ====================
+        // ===== IS PERMISSION ERROR =====
+        function isPermissionError(error) {
+            return error && (error.code === 'permission-denied' ||
+                error.message && error.message.includes('permission-denied') ||
+                error.message && error.message.includes('Missing or insufficient permissions'));
+        }
+
+        // ===== SHOW PERMISSION ERROR UI =====
+        function showPermissionError(containerId, retryFn) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = `
+                <div class="permission-error-container">
+                    <i class="fas fa-lock"></i>
+                    <div class="error-title">⛔ Permission Denied</div>
+                    <div class="error-desc">You don't have permission to view this data. Please contact the school administrator.</div>
+                    <button class="retry-btn" onclick="(${retryFn.toString()})()"><i class="fas fa-sync-alt"></i> Retry</button>
+                </div>
+            `;
+        }
+
+        // ==================== FIREBASE CRUD with Error Handling & Caching ====================
         async function saveToFirebase() {
             if (!currentUser) { console.warn('No user logged in – skipping save.'); return; }
             try {
-                const safeDemoExpiry = (demoExpiry !== undefined && demoExpiry !== null) ? demoExpiry : null;
                 const data = {
                     students: students || [],
                     deletedStudents: deletedStudents || [],
@@ -1965,10 +2350,9 @@
                     settings: settings || {},
                     nextCode: nextCode || 1,
                     isDemo: isDemo || false,
-                    demoExpiry: safeDemoExpiry,
+                    demoExpiry: demoExpiry || null,
                     markSheets: markSheets || [{ name: 'Sheet1', data: {} }],
-                    boardingData: boardingData || { dormitory: {}, meals: {}, health: {}, gatepass: {} },
-                    // NEW MODULES
+                    boardingData: boardingData || { dormitories: [], meals: [], health: [], gatepasses: [] },
                     parents: parents || [],
                     feeStructures: feeStructures || [],
                     payments: payments || [],
@@ -1982,7 +2366,12 @@
                     busRoutes: busRoutes || [],
                     busAttendance: busAttendance || [],
                     notifications: notifications || [],
-                    chatMessages: chatMessages || []
+                    chatMessages: chatMessages || [],
+                    attendanceRecords: attendanceRecords || [],
+                    dormitories: dormitories || [],
+                    meals: meals || [],
+                    healthRecords: healthRecords || [],
+                    gatepasses: gatepasses || []
                 };
                 await db.collection('schools').doc(currentUser.uid).set(data, { merge: true });
                 console.log('✅ Data saved successfully');
@@ -1993,93 +2382,217 @@
         }
 
         async function loadFromFirebase() {
-            if (!currentUser) return false;
+            if (!currentUser) {
+                console.warn('No user logged in – cannot load data.');
+                return false;
+            }
+
+            // If we already have data loaded and we're just refreshing, use cache first
+            if (dataLoaded && students.length > 0) {
+                console.log('📦 Using cached data while fetching fresh...');
+                // Still attempt to refresh in background
+                try {
+                    await refreshFirebaseData();
+                    return true;
+                } catch (e) {
+                    console.warn('Background refresh failed, using cache:', e);
+                    return true;
+                }
+            }
+
+            // First attempt with retry
+            return await loadFirebaseDataWithRetry();
+        }
+
+        async function loadFirebaseDataWithRetry() {
+            let attempts = 0;
+            while (attempts < MAX_RETRIES) {
+                try {
+                    const result = await loadFirebaseDataOnce();
+                    if (result) {
+                        loadAttempts = 0;
+                        dataLoaded = true;
+                        return true;
+                    }
+                    return false;
+                } catch (error) {
+                    attempts++;
+                    const isPermError = isPermissionError(error);
+                    if (isPermError) {
+                        console.error('⛔ Permission error loading data:', error);
+                        showToast('⛔ You don\'t have permission to view this data. Please contact the school administrator.',
+                            true);
+                        return false;
+                    }
+                    if (attempts < MAX_RETRIES) {
+                        console.warn(`⚠️ Load attempt ${attempts} failed. Retrying in ${RETRY_DELAY/1000}s...`, error);
+                        showToast(`🔄 Retrying data load (${attempts}/${MAX_RETRIES})...`, false);
+                        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                    } else {
+                        console.error('❌ All load attempts failed:', error);
+                        showToast('❌ Unable to load data. Please check your internet connection or contact admin.', true);
+                        return false;
+                    }
+                }
+            }
+            return false;
+        }
+
+        async function loadFirebaseDataOnce() {
+            const doc = await db.collection('schools').doc(currentUser.uid).get();
+            if (!doc.exists) {
+                await saveToFirebase();
+                return true;
+            }
+            const data = doc.data();
+            students = data.students || [];
+            deletedStudents = data.deletedStudents || [];
+            gradeXStudents = data.gradeXStudents || [];
+            teachers = data.teachers || [];
+            nextCode = data.nextCode || students.length + 1;
+            settings = { ...settings, ...(data.settings || {}) };
+            markSheets = data.markSheets || [{ name: 'Sheet1', data: {} }];
+            boardingData = data.boardingData || { dormitories: [], meals: [], health: [], gatepasses: [] };
+            isDemo = data.isDemo || false;
+            demoExpiry = data.demoExpiry || null;
+            parents = data.parents || [];
+            feeStructures = data.feeStructures || [];
+            payments = data.payments || [];
+            exams = data.exams || [];
+            examMarks = data.examMarks || [];
+            timetables = data.timetables || [];
+            staff = data.staff || [];
+            books = data.books || [];
+            borrowings = data.borrowings || [];
+            homework = data.homework || [];
+            busRoutes = data.busRoutes || [];
+            busAttendance = data.busAttendance || [];
+            notifications = data.notifications || [];
+            chatMessages = data.chatMessages || [];
+            attendanceRecords = data.attendanceRecords || [];
+            dormitories = data.dormitories || [];
+            meals = data.meals || [];
+            healthRecords = data.healthRecords || [];
+            gatepasses = data.gatepasses || [];
+
+            ensureAllStudentsPresent();
+
+            // Update UI
+            document.getElementById('schoolName').innerHTML = settings.name || 'EduNexa Pro';
+            document.getElementById('termDisplay').innerHTML =
+                `${settings.term || 'Term 2'}, ${settings.year || '2025'}`;
+            document.getElementById('moCode').innerHTML = settings.moeCode ? `MOE: ${settings.moeCode}` : '';
+            document.getElementById('setSchoolName').value = settings.name || '';
+            document.getElementById('setMoECode').value = settings.moeCode || '';
+            document.getElementById('setMotto').value = settings.motto || '';
+            document.getElementById('setTerm').value = settings.term || 'Term 2';
+            document.getElementById('setYear').value = settings.year || '2025';
+            document.getElementById('setTeacher').value = settings.teacher || 'Mrs. J. Kamau';
+            document.getElementById('setHeadTeacher').value = settings.headTeacher || 'Dr. J. Mwangi';
+            document.getElementById('setOpeningDate').value = settings.openingDate || '';
+            document.getElementById('setClosingDate').value = settings.closingDate || '';
+            document.getElementById('setWeeksInTerm').value = settings.weeksInTerm || 13;
+            document.getElementById('totalStudents').innerText = students.length;
+            document.getElementById('totalRevenue').innerText = students.length * 50;
+
+            renderFeeStructureSettings();
+            refreshAllUI();
+
+            // Set up real-time listener
+            if (unsubscribeListener) {
+                unsubscribeListener();
+                unsubscribeListener = null;
+            }
+            unsubscribeListener = db.collection('schools').doc(currentUser.uid)
+                .onSnapshot((snap) => {
+                    if (isImporting) return;
+                    if (snap.exists) {
+                        const d = snap.data();
+                        students = d.students || [];
+                        deletedStudents = d.deletedStudents || [];
+                        gradeXStudents = d.gradeXStudents || [];
+                        teachers = d.teachers || [];
+                        settings = { ...settings, ...(d.settings || {}) };
+                        markSheets = d.markSheets || markSheets;
+                        boardingData = d.boardingData || boardingData;
+                        parents = d.parents || [];
+                        feeStructures = d.feeStructures || [];
+                        payments = d.payments || [];
+                        exams = d.exams || [];
+                        examMarks = d.examMarks || [];
+                        timetables = d.timetables || [];
+                        staff = d.staff || [];
+                        books = d.books || [];
+                        borrowings = d.borrowings || [];
+                        homework = d.homework || [];
+                        busRoutes = d.busRoutes || [];
+                        busAttendance = d.busAttendance || [];
+                        notifications = d.notifications || [];
+                        chatMessages = d.chatMessages || [];
+                        attendanceRecords = d.attendanceRecords || [];
+                        dormitories = d.dormitories || [];
+                        meals = d.meals || [];
+                        healthRecords = d.healthRecords || [];
+                        gatepasses = d.gatepasses || [];
+                        ensureAllStudentsPresent();
+                        refreshAllUI();
+                        console.log('🔄 Data updated from cloud');
+                    }
+                }, (err) => {
+                    if (isPermissionError(err)) {
+                        console.warn('⛔ Listener permission error:', err);
+                        showToast('⛔ Permission error. Some data may not be visible.', true);
+                    } else {
+                        console.warn('Listener error:', err);
+                    }
+                });
+
+            dataLoaded = true;
+            return true;
+        }
+
+        // Background refresh function
+        async function refreshFirebaseData() {
             try {
                 const doc = await db.collection('schools').doc(currentUser.uid).get();
-                if (!doc.exists) { await saveToFirebase(); return true; }
-                const data = doc.data();
-                students = data.students || [];
-                deletedStudents = data.deletedStudents || [];
-                gradeXStudents = data.gradeXStudents || [];
-                teachers = data.teachers || [];
-                nextCode = data.nextCode || students.length + 1;
-                settings = data.settings || { name: 'EduNexa Pro', term: 'Term 2', year: '2025' };
-                markSheets = data.markSheets || [{ name: 'Sheet1', data: {} }];
-                boardingData = data.boardingData || { dormitory: {}, meals: {}, health: {}, gatepass: {} };
-                isDemo = data.isDemo || false;
-                demoExpiry = data.demoExpiry || null;
-                // NEW
-                parents = data.parents || [];
-                feeStructures = data.feeStructures || [];
-                payments = data.payments || [];
-                exams = data.exams || [];
-                examMarks = data.examMarks || [];
-                timetables = data.timetables || [];
-                staff = data.staff || [];
-                books = data.books || [];
-                borrowings = data.borrowings || [];
-                homework = data.homework || [];
-                busRoutes = data.busRoutes || [];
-                busAttendance = data.busAttendance || [];
-                notifications = data.notifications || [];
-                chatMessages = data.chatMessages || [];
-
-                ensureAllStudentsPresent();
-                document.getElementById('schoolName').innerHTML = settings.name || 'EduNexa Pro';
-                document.getElementById('termDisplay').innerHTML = `${settings.term || 'Term 2'}, ${settings.year || '2025'}`;
-                document.getElementById('moCode').innerHTML = settings.moeCode ? `MOE: ${settings.moeCode}` : '';
-                document.getElementById('setSchoolName').value = settings.name || '';
-                document.getElementById('setMoECode').value = settings.moeCode || '';
-                document.getElementById('setMotto').value = settings.motto || '';
-                document.getElementById('setTerm').value = settings.term || 'Term 2';
-                document.getElementById('setYear').value = settings.year || '2025';
-                document.getElementById('setTeacher').value = settings.teacher || 'Mrs. J. Kamau';
-                document.getElementById('setHeadTeacher').value = settings.headTeacher || 'Dr. J. Mwangi';
-                document.getElementById('totalStudents').innerText = students.length;
-                document.getElementById('totalRevenue').innerText = students.length * 50;
-
-                refreshAllUI();
-
-                if (unsubscribeListener) {
-                    unsubscribeListener();
-                    unsubscribeListener = null;
+                if (doc.exists) {
+                    const data = doc.data();
+                    students = data.students || students;
+                    deletedStudents = data.deletedStudents || deletedStudents;
+                    gradeXStudents = data.gradeXStudents || gradeXStudents;
+                    teachers = data.teachers || teachers;
+                    settings = { ...settings, ...(data.settings || {}) };
+                    markSheets = data.markSheets || markSheets;
+                    boardingData = data.boardingData || boardingData;
+                    parents = data.parents || parents;
+                    feeStructures = data.feeStructures || feeStructures;
+                    payments = data.payments || payments;
+                    exams = data.exams || exams;
+                    examMarks = data.examMarks || examMarks;
+                    timetables = data.timetables || timetables;
+                    staff = data.staff || staff;
+                    books = data.books || books;
+                    borrowings = data.borrowings || borrowings;
+                    homework = data.homework || homework;
+                    busRoutes = data.busRoutes || busRoutes;
+                    busAttendance = data.busAttendance || busAttendance;
+                    notifications = data.notifications || notifications;
+                    chatMessages = data.chatMessages || chatMessages;
+                    attendanceRecords = data.attendanceRecords || attendanceRecords;
+                    dormitories = data.dormitories || dormitories;
+                    meals = data.meals || meals;
+                    healthRecords = data.healthRecords || healthRecords;
+                    gatepasses = data.gatepasses || gatepasses;
+                    ensureAllStudentsPresent();
+                    refreshAllUI();
+                    console.log('🔄 Background refresh completed');
                 }
-                unsubscribeListener = db.collection('schools').doc(currentUser.uid)
-                    .onSnapshot((snap) => {
-                        if (isImporting) return;
-                        if (snap.exists) {
-                            const d = snap.data();
-                            students = d.students || [];
-                            deletedStudents = d.deletedStudents || [];
-                            gradeXStudents = d.gradeXStudents || [];
-                            teachers = d.teachers || [];
-                            settings = d.settings || settings;
-                            markSheets = d.markSheets || markSheets;
-                            boardingData = d.boardingData || boardingData;
-                            parents = d.parents || [];
-                            feeStructures = d.feeStructures || [];
-                            payments = d.payments || [];
-                            exams = d.exams || [];
-                            examMarks = d.examMarks || [];
-                            timetables = d.timetables || [];
-                            staff = d.staff || [];
-                            books = d.books || [];
-                            borrowings = d.borrowings || [];
-                            homework = d.homework || [];
-                            busRoutes = d.busRoutes || [];
-                            busAttendance = d.busAttendance || [];
-                            notifications = d.notifications || [];
-                            chatMessages = d.chatMessages || [];
-                            ensureAllStudentsPresent();
-                            refreshAllUI();
-                            console.log('🔄 Data updated from cloud');
-                        }
-                    }, (err) => { console.warn('Listener error:', err); });
-                return true;
-            } catch (error) {
-                console.error('Load error:', error);
-                showToast('❌ Failed to sync data. Please check your internet connection.', true);
-                return false;
+            } catch (e) {
+                if (isPermissionError(e)) {
+                    console.warn('⛔ Background refresh permission error:', e);
+                } else {
+                    console.warn('Background refresh failed:', e);
+                }
             }
         }
 
@@ -2091,7 +2604,6 @@
                 window.loadTeachers();
                 window.loadPayments();
                 window.loadRankings();
-                window.loadAttendance();
                 window.loadAnalytics();
                 window.loadBoardingDashboard();
                 window.loadMsgHistory();
@@ -2106,11 +2618,24 @@
                 window.loadTransport();
                 window.updateAllStreamDropdowns();
                 window.loadFeeSummary();
+                window.loadTodayAttendanceWidget();
+                window.updateNotificationBadge();
+                document.getElementById('userRoleDisplay').innerText = currentUserRole ? currentUserRole.toUpperCase() :
+                    'ADMIN';
                 console.log('🔄 All UI components refreshed');
             } catch (e) { console.warn('Error refreshing UI:', e); }
         }
 
         // ==================== AUTH ====================
+        let selectedPortal = 'admin';
+
+        function selectPortal(portal) {
+            selectedPortal = portal;
+            document.querySelectorAll('.portal-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.portal === portal);
+            });
+        }
+
         async function doLogin() {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
@@ -2118,11 +2643,24 @@
             try {
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 currentUser = userCredential.user;
+                // Determine role
+                const doc = await db.collection('schools').doc(currentUser.uid).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    const parent = (data.parents || []).find(p => p.email === email);
+                    if (parent) { currentUserRole = 'parent'; }
+                    const staffMember = (data.staff || []).find(s => s.email === email);
+                    if (staffMember) { currentUserRole = staffMember.role.toLowerCase(); }
+                    const teacher = (data.teachers || []).find(t => t.email === email);
+                    if (teacher) { currentUserRole = 'teacher'; }
+                    const adminStaff = (data.staff || []).find(s => s.email === email && s.role === 'Super Admin');
+                    if (adminStaff) { currentUserRole = 'superadmin'; }
+                }
                 await loadFromFirebase();
                 document.getElementById('authSection').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
                 refreshAllUI();
-                showToast('Welcome back!', false);
+                showToast(`Welcome ${currentUserRole}!`, false);
             } catch (error) { alert('Login failed: ' + error.message); }
         }
 
@@ -2148,12 +2686,13 @@
                     gradeXStudents: [],
                     teachers: [],
                     settings: { name: schoolName, motto: 'Excellence', term: 'Term 2', year: '2025',
-                        teacher: 'Mrs. J. Kamau', headTeacher: 'Dr. J. Mwangi', moeCode: '' },
+                        teacher: 'Mrs. J. Kamau', headTeacher: 'Dr. J. Mwangi', moeCode: '', weeksInTerm: 13,
+                        feeStructure: {} },
                     nextCode: 1,
                     isDemo: false,
                     demoExpiry: null,
                     markSheets: [{ name: 'Sheet1', data: {} }],
-                    boardingData: { dormitory: {}, meals: {}, health: {}, gatepass: {} },
+                    boardingData: { dormitories: [], meals: [], health: [], gatepasses: [] },
                     parents: [],
                     feeStructures: [],
                     payments: [],
@@ -2167,8 +2706,14 @@
                     busRoutes: [],
                     busAttendance: [],
                     notifications: [],
-                    chatMessages: []
+                    chatMessages: [],
+                    attendanceRecords: [],
+                    dormitories: [],
+                    meals: [],
+                    healthRecords: [],
+                    gatepasses: []
                 });
+                currentUserRole = 'superadmin';
                 await loadFromFirebase();
                 document.getElementById('authSection').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
@@ -2196,12 +2741,13 @@
                     gradeXStudents: [],
                     teachers: [],
                     settings: { name: schoolName, motto: 'Demo Mode', term: 'Term 2', year: '2025',
-                        teacher: 'Demo Teacher', headTeacher: 'Demo Head', moeCode: 'DEMO/001' },
+                        teacher: 'Demo Teacher', headTeacher: 'Demo Head', moeCode: 'DEMO/001', weeksInTerm: 13,
+                        feeStructure: {} },
                     nextCode: 1,
                     isDemo: true,
                     demoExpiry: expiry.toISOString(),
                     markSheets: [{ name: 'Sheet1', data: {} }],
-                    boardingData: { dormitory: {}, meals: {}, health: {}, gatepass: {} },
+                    boardingData: { dormitories: [], meals: [], health: [], gatepasses: [] },
                     parents: [],
                     feeStructures: [],
                     payments: [],
@@ -2215,13 +2761,19 @@
                     busRoutes: [],
                     busAttendance: [],
                     notifications: [],
-                    chatMessages: []
+                    chatMessages: [],
+                    attendanceRecords: [],
+                    dormitories: [],
+                    meals: [],
+                    healthRecords: [],
+                    gatepasses: []
                 });
+                currentUserRole = 'superadmin';
                 await loadFromFirebase();
                 document.getElementById('authSection').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
                 refreshAllUI();
-                showToast('3-day demo started! Register within 3 days to keep data.', false);
+                showToast('3-day demo started!', false);
             } catch (error) { alert('Demo error: ' + error.message); }
         }
 
@@ -2231,6 +2783,7 @@
             await auth.signOut();
             currentUser = null;
             students = [];
+            dataLoaded = false;
             document.getElementById('authSection').style.display = 'block';
             document.getElementById('mainApp').style.display = 'none';
             window.switchTab('login');
@@ -2270,17 +2823,18 @@
                 if (section === "trash") window.loadTrash();
                 if (section === "dashboard") window.loadDashboard();
                 if (section === "ranking") window.loadRankings();
-                if (section === "attendance") window.loadAttendance();
+                if (section === "attendance") { window.loadAttendanceEntry();
+                    window.updateAllStreamDropdowns(); }
                 if (section === "messages") window.loadMsgHistory();
                 if (section === "analytics") window.loadAnalytics();
                 if (section === "boarding") window.loadBoardingDashboard();
                 if (section === "settings") { window.renderStreamManagement();
-                    window.updateAllStreamDropdowns(); }
+                    window.updateAllStreamDropdowns();
+                    window.renderFeeStructureSettings(); }
                 if (section === "reports") {
                     document.getElementById('reportContainer').innerHTML =
                         `<div style="text-align:center;padding:40px;color:#64748b;"><i class="fas fa-file-alt" style="font-size:48px;display:block;margin-bottom:15px;"></i>Select a report option above to view data.</div>`;
                 }
-                // NEW MODULES
                 if (section === "parents") { window.loadParents();
                     window.updateAllStreamDropdowns(); }
                 if (section === "fees") { window.loadFeeData();
@@ -2304,13 +2858,15 @@
                 const total = students.length;
                 const avgAll = total ? students.reduce((a, b) => a + avg(b), 0) / total : 0;
                 const boardingCount = students.filter(s => s.isBoarding).length;
+                const parentCount = parents.length;
+                const staffCount = staff.length;
                 document.getElementById('statsGrid').innerHTML = `
                     <div class="stat-card" onclick="window.showSection('students')"><div class="stat-icon"><i class="fas fa-users"></i></div><div><h3>${total}</h3><p>Total Students</p></div></div>
                     <div class="stat-card" onclick="window.showSection('boarding')"><div class="stat-icon"><i class="fas fa-bed"></i></div><div><h3>${boardingCount}</h3><p>Boarding Students</p></div></div>
                     <div class="stat-card"><div class="stat-icon"><i class="fas fa-chart-line"></i></div><div><h3>${avgAll.toFixed(1)}%</h3><p>School Average</p></div></div>
                     <div class="stat-card" onclick="window.showSection('teachers')"><div class="stat-icon"><i class="fas fa-chalkboard-user"></i></div><div><h3>${teachers.length}</h3><p>Class Teachers</p></div></div>
-                    <div class="stat-card" onclick="window.showSection('parents')"><div class="stat-icon"><i class="fas fa-user-friends"></i></div><div><h3>${parents.length}</h3><p>Parents</p></div></div>
-                    <div class="stat-card" onclick="window.showSection('fees')"><div class="stat-icon"><i class="fas fa-coins"></i></div><div><h3>KSh ${feeStructures.reduce((s,f)=>s+f.amount,0).toLocaleString()}</h3><p>Total Fees</p></div></div>
+                    <div class="stat-card" onclick="window.showSection('parents')"><div class="stat-icon"><i class="fas fa-user-friends"></i></div><div><h3>${parentCount}</h3><p>Parents</p></div></div>
+                    <div class="stat-card" onclick="window.showSection('staff')"><div class="stat-icon"><i class="fas fa-user-tie"></i></div><div><h3>${staffCount}</h3><p>Staff</p></div></div>
                 `;
                 const top5 = [...students].sort((a, b) => avg(b) - avg(a)).slice(0, 5);
                 let tbody = '';
@@ -2323,6 +2879,7 @@
                 }
                 document.getElementById('topPerformersBody').innerHTML = tbody;
                 window.loadFeeSummary();
+                window.loadTodayAttendanceWidget();
             } catch (e) { console.error("loadDashboard error:", e); }
         }
 
@@ -2339,6 +2896,23 @@
                 document.getElementById('feeTotalOutstanding').innerText = `KSh ${outstanding.toLocaleString()}`;
                 document.getElementById('feeCollectionRate').innerText = `${rate}%`;
             } catch (e) { console.error("loadFeeSummary error:", e); }
+        }
+
+        // ==================== TODAY ATTENDANCE WIDGET ====================
+        function loadTodayAttendanceWidget() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const todayRecords = attendanceRecords.filter(r => r.date === today);
+                const present = todayRecords.filter(r => r.status === 'Present').length;
+                const absent = todayRecords.filter(r => r.status === 'Absent').length;
+                const excused = todayRecords.filter(r => r.status === 'Excused').length;
+                const total = present + absent + excused;
+                const rate = total > 0 ? ((present / total) * 100).toFixed(1) : 0;
+                document.getElementById('todayPresent').innerText = present;
+                document.getElementById('todayAbsent').innerText = absent;
+                document.getElementById('todayExcused').innerText = excused;
+                document.getElementById('todayAttendanceRate').innerText = `${rate}%`;
+            } catch (e) { console.error("loadTodayAttendanceWidget error:", e); }
         }
 
         // ==================== FILTER STUDENTS ====================
@@ -2403,12 +2977,12 @@
                         <td>${t.phone || '-'}</td>
                         <td>${t.email || '-'}</td>
                         <td>${statusBadge}</td>
-                        <td><i class="fas fa-trash delete-icon" onclick="window.deleteTeacher(${i})" title="Remove teacher"></i>
+                        <td><i class="fas fa-trash delete-icon" onclick="window.deleteTeacher(${i})" title="Remove"></i>
                         ${!hasAuth ? `<i class="fas fa-user-plus reset-pass-icon" onclick="window.createTeacherLogin(${i})" title="Create login"></i>` : `<i class="fas fa-key reset-pass-icon" onclick="window.openResetTeacherPassword(${i})" title="Reset password"></i>`}</td>
                     </tr>`;
                 });
                 document.getElementById("teachersListBody").innerHTML = html ||
-                    "<tr><td colspan='8' style='text-align:center;padding:30px;'>No class teachers assigned. Click '+ Add Class Teacher' to assign a teacher to a specific grade and stream.</td></tr>";
+                    "<tr><td colspan='8' style='text-align:center;padding:30px;'>No class teachers assigned.</td></tr>";
             } catch (e) { console.error("Filter teachers error:", e); }
         }
 
@@ -2440,11 +3014,11 @@
                 const assessmentNo = document.getElementById("assessmentNoInput").value.trim();
                 if (!name) { showToast("Enter student name", true); return; }
                 if (!phone) { showToast("Enter parent phone", true); return; }
-                if (!upi) { showToast("Enter UPI / Assessment Number", true); return; }
-                if (!assessmentNo) { showToast("Enter Student Code / Assessment No.", true); return; }
+                if (!upi) { showToast("Enter UPI", true); return; }
+                if (!assessmentNo) { showToast("Enter Student Code", true); return; }
                 if (students.find(s => s.admNo === upi)) { showToast("UPI already exists!", true); return; }
-                if (students.find(s => s.studentCode === assessmentNo)) { showToast("Student Code already exists!", true);
-                    return; }
+                if (students.find(s => s.studentCode === assessmentNo)) { showToast("Student Code already exists!",
+                    true); return; }
                 let newStudent = {
                     id: Date.now(),
                     admNo: upi,
@@ -2455,7 +3029,8 @@
                     studentCode: assessmentNo,
                     marks: {},
                     regDate: new Date().toISOString(),
-                    isBoarding: false
+                    isBoarding: false,
+                    parentId: null
                 };
                 let subjectsList = getSubjects(sClass);
                 subjectsList.forEach(sub => setMark(newStudent, sub, 0));
@@ -2464,10 +3039,6 @@
                 await loadFromFirebase();
                 refreshAllUI();
                 showToast(`✅ ${name} registered! Code: ${assessmentNo}`, false);
-                document.getElementById("studentName").value = "";
-                document.getElementById("parentPhone").value = "";
-                document.getElementById("upiInput").value = "";
-                document.getElementById("assessmentNoInput").value = "";
                 closeModal("studentModal");
             } catch (e) { console.error("Add student error:", e);
                 showToast("Error adding student: " + e.message, true); }
@@ -2558,7 +3129,7 @@
                     </div>`;
                 });
                 document.getElementById("bulkStudentsList").innerHTML = html ||
-                    "<div style='text-align:center;padding:20px;color:#64748b;'>No students added yet. Click '+ Add Student' to add.</div>";
+                    "<div style='text-align:center;padding:20px;color:#64748b;'>No students added yet.</div>";
             } catch (e) { console.error("Render bulk list error:", e); }
         }
 
@@ -2596,7 +3167,8 @@
                             studentCode: code,
                             marks: {},
                             regDate: new Date().toISOString(),
-                            isBoarding: false
+                            isBoarding: false,
+                            parentId: null
                         };
                         let subjectsList = getSubjects(newStudent.class);
                         subjectsList.forEach(sub => setMark(newStudent, sub, 0));
@@ -3000,9 +3572,8 @@
             showToast('✏️ Manual entry mode – enter marks directly in the table', false); }
 
         window.openImportModal = function() {
-            console.log('📥 Opening import modal');
             const modal = document.getElementById('importModal');
-            if (!modal) { alert('Import modal not found. Please refresh the page.'); return; }
+            if (!modal) { alert('Import modal not found.'); return; }
             document.getElementById('importPreviewContainer').style.display = 'none';
             document.getElementById('importStatus').style.display = 'none';
             document.getElementById('confirmImportBtn').disabled = true;
@@ -3254,12 +3825,65 @@
                 settings.closingDate = document.getElementById('setClosingDate').value || '';
                 settings.teacher = document.getElementById('setTeacher').value || 'Mrs. J. Kamau';
                 settings.headTeacher = document.getElementById('setHeadTeacher').value || 'Dr. J. Mwangi';
+                settings.weeksInTerm = parseInt(document.getElementById('setWeeksInTerm').value) || 13;
+                await saveFeeStructureSettings();
                 await saveToFirebase();
                 await loadFromFirebase();
                 refreshAllUI();
                 showToast('✅ Settings saved successfully!', false);
             } catch (e) { console.error("Save settings error:", e);
                 showToast('❌ Error saving settings: ' + e.message, true); }
+        }
+
+        // ===== FEE STRUCTURE SETTINGS =====
+        function renderFeeStructureSettings() {
+            const container = document.getElementById('feeStructureSettingsContainer');
+            if (!container) return;
+            const grades = ["PP1", "PP2", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7",
+                "Grade 8", "Grade 9"
+            ];
+            let html = '<div style="max-height:400px;overflow-y:auto;">';
+            grades.forEach(g => {
+                const amount = settings.feeStructure && settings.feeStructure[g] ? settings.feeStructure[g] : '';
+                html += `<div class="fee-setting-row">
+                    <label>${g}</label>
+                    <input type="number" class="fee-setting-input" data-grade="${g}" value="${amount}" placeholder="Amount (KSh)" style="flex:1;min-width:120px;">
+                </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        async function saveFeeStructureSettings() {
+            try {
+                const inputs = document.querySelectorAll('.fee-setting-input');
+                const feeStructure = {};
+                inputs.forEach(inp => {
+                    const grade = inp.dataset.grade;
+                    const val = parseFloat(inp.value);
+                    if (val > 0) feeStructure[grade] = val;
+                });
+                settings.feeStructure = feeStructure;
+                for (const [grade, amount] of Object.entries(feeStructure)) {
+                    const existing = feeStructures.find(f => f.grade === grade && f.category === 'Tuition');
+                    if (existing) {
+                        existing.amount = amount;
+                    } else {
+                        feeStructures.push({
+                            id: Date.now() + Math.random() * 1000,
+                            grade,
+                            stream: 'All',
+                            category: 'Tuition',
+                            amount,
+                            created_at: new Date().toISOString()
+                        });
+                    }
+                }
+                await saveToFirebase();
+                await loadFromFirebase();
+                showToast('✅ Fee structure saved!', false);
+            } catch (e) { console.error("Save fee structure settings error:", e);
+                showToast('❌ Error saving fee structure.', true); }
         }
 
         // ==================== STREAM MANAGEMENT ====================
@@ -3360,16 +3984,6 @@
         }
 
         function filterGradeX() {}
-        function showBoardingTab() {}
-        function openBoardingModal() {}
-        function saveDormitoryAssignment() {}
-        function saveMealRecord() {}
-        function saveHealthRecord() {}
-        function saveGatePass() {}
-        function approveGatePass() {}
-        function deleteMealRecord() {}
-        function deleteHealthRecord() {}
-        function deleteGatePass() {}
         function resetFilters() {}
 
         function loadPayments() {
@@ -3402,28 +4016,166 @@
             } catch (e) { console.error("loadRankings error:", e); }
         }
 
-        function loadAttendance() {
+        // ==================== ATTENDANCE ====================
+        function loadAttendanceEntry() {
             try {
                 const container = document.getElementById('attendanceContainer');
-                if (!container) return;
-                const grade = document.getElementById('attClass')?.value || 'Grade 1';
-                const stream = document.getElementById('attStream')?.value || 'North';
+                const grade = document.getElementById('attClass').value;
+                const stream = document.getElementById('attStream').value;
+                const date = document.getElementById('attDate').value || new Date().toISOString().split('T')[0];
+                document.getElementById('attDate').value = date;
+
                 const filtered = students.filter(s => s.class === grade && s.stream === stream);
-                let html = `<div class="attendance-grid"><h4>${grade} - ${stream} (${filtered.length} students)</h4>`;
-                filtered.forEach(s => {
-                    html +=
-                        `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;">
-                        <span>${escapeHtml(s.name)}</span>
-                        <span><input type="checkbox" id="att_${s.id}" onchange="window.markAttendance(${s.id})"> Present</span>
-                    </div>`;
+                if (filtered.length === 0) {
+                    container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">No students in this class/stream.</p>';
+                    return;
+                }
+
+                const existing = attendanceRecords.filter(r => r.date === date && r.class === grade && r.stream === stream);
+
+                let html =
+                    `<div style="background:#f0fdf4;padding:12px 16px;border-radius:12px;margin-bottom:12px;display:flex;justify-content:space-between;flex-wrap:wrap;align-items:center;">
+                        <div><strong>📅 ${date}</strong> | ${grade} - ${stream} | Week ${getWeekNumber(date)}</div>
+                        <div><span class="grade-badge" style="background:#166534;">${filtered.length} students</span></div>
+                    </div>
+                    <div class="table-wrapper"><table class="data-table"><thead><tr><th>#</th><th>Student Name</th><th>Status</th></tr></thead><tbody>`;
+
+                filtered.forEach((s, i) => {
+                    const record = existing.find(r => r.studentId === s.id);
+                    const status = record ? record.status : 'Present';
+                    html += `<tr>
+                        <td>${i+1}</td>
+                        <td><strong>${escapeHtml(s.name)}</strong></td>
+                        <td>
+                            <select class="attendance-status-select" data-student="${s.id}" style="padding:4px 10px;border-radius:8px;border:1px solid #ddd;">
+                                <option value="Present" ${status === 'Present' ? 'selected' : ''}>✅ Present</option>
+                                <option value="Absent" ${status === 'Absent' ? 'selected' : ''}>❌ Absent</option>
+                                <option value="Excused" ${status === 'Excused' ? 'selected' : ''}>⏳ Excused</option>
+                            </select>
+                        </td>
+                    </tr>`;
                 });
-                html += '</div>';
-                container.innerHTML = html || '<p>No students in this class/stream</p>';
-            } catch (e) { console.error("loadAttendance error:", e); }
+
+                html += `</tbody></table></div>
+                        <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+                            <button class="action-btn primary" onclick="window.saveAttendance()">💾 Save Attendance</button>
+                            <button class="action-btn info" onclick="window.loadAttendanceHistory()">📊 View History</button>
+                            <button class="action-btn warning" onclick="window.markAllPresent()">✅ Mark All Present</button>
+                        </div>
+                        <div id="attendanceHistoryContainer" style="margin-top:15px;display:none;"></div>`;
+
+                container.innerHTML = html;
+            } catch (e) { console.error("loadAttendanceEntry error:", e); }
         }
 
-        function markAttendance(id) { showToast('Attendance marked for student ' + id, false); }
+        async function saveAttendance() {
+            try {
+                const grade = document.getElementById('attClass').value;
+                const stream = document.getElementById('attStream').value;
+                const date = document.getElementById('attDate').value;
+                if (!date) { showToast('Please select a date.', true); return; }
 
+                const selects = document.querySelectorAll('.attendance-status-select');
+                const records = [];
+                selects.forEach(sel => {
+                    const studentId = parseInt(sel.dataset.student);
+                    const status = sel.value;
+                    records.push({ studentId, status });
+                });
+
+                attendanceRecords = attendanceRecords.filter(r => !(r.date === date && r.class === grade && r.stream ===
+                    stream));
+
+                records.forEach(r => {
+                    const student = students.find(s => s.id === r.studentId);
+                    if (student) {
+                        attendanceRecords.push({
+                            studentId: r.studentId,
+                            date: date,
+                            status: r.status,
+                            class: grade,
+                            stream: stream,
+                            weekNumber: getWeekNumber(date),
+                            term: getTerm(),
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+                });
+
+                await saveToFirebase();
+                await loadFromFirebase();
+                showToast(`✅ Attendance saved for ${records.length} students!`, false);
+                loadAttendanceEntry();
+                loadTodayAttendanceWidget();
+            } catch (e) { console.error("Save attendance error:", e);
+                showToast('Error saving attendance.', true); }
+        }
+
+        function markAllPresent() {
+            document.querySelectorAll('.attendance-status-select').forEach(sel => sel.value = 'Present');
+            showToast('✅ All marked as Present. Click "Save Attendance" to confirm.', false);
+        }
+
+        function loadAttendanceHistory() {
+            const container = document.getElementById('attendanceHistoryContainer');
+            if (!container) return;
+            const grade = document.getElementById('attClass').value;
+            const stream = document.getElementById('attStream').value;
+            const studentIds = students.filter(s => s.class === grade && s.stream === stream).map(s => s.id);
+            const records = attendanceRecords.filter(r => studentIds.includes(r.studentId));
+
+            if (records.length === 0) {
+                container.style.display = 'block';
+                container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:10px;">No attendance records found for this class.</p>';
+                return;
+            }
+
+            const dates = [...new Set(records.map(r => r.date))].sort();
+            let html =
+                `<h4 style="margin-top:10px;">📊 Attendance History (${dates.length} days)</h4><div class="table-wrapper"><table class="data-table"><thead><tr><th>Date</th><th>Week</th><th>Present</th><th>Absent</th><th>Excused</th><th>Rate</th></tr></thead><tbody>`;
+
+            dates.forEach(date => {
+                const dayRecords = records.filter(r => r.date === date);
+                const present = dayRecords.filter(r => r.status === 'Present').length;
+                const absent = dayRecords.filter(r => r.status === 'Absent').length;
+                const excused = dayRecords.filter(r => r.status === 'Excused').length;
+                const total = present + absent + excused;
+                const rate = total > 0 ? ((present / total) * 100).toFixed(1) : 0;
+                const week = dayRecords.length > 0 ? dayRecords[0].weekNumber : getWeekNumber(date);
+                html +=
+                    `<tr><td>${date}</td><td>${week}</td><td style="color:#166534;">${present}</td><td style="color:#dc2626;">${absent}</td><td style="color:#f59e0b;">${excused}</td><td><strong>${rate}%</strong></td></tr>`;
+            });
+
+            const totalPresent = records.filter(r => r.status === 'Present').length;
+            const totalAbsent = records.filter(r => r.status === 'Absent').length;
+            const totalExcused = records.filter(r => r.status === 'Excused').length;
+            const totalAll = totalPresent + totalAbsent + totalExcused;
+            const overallRate = totalAll > 0 ? ((totalPresent / totalAll) * 100).toFixed(1) : 0;
+
+            html += `</tbody></table></div>
+                    <div class="attendance-summary" style="margin-top:10px;background:#f1f8f4;padding:12px 16px;border-radius:12px;display:flex;flex-wrap:wrap;gap:20px;justify-content:center;">
+                        <div class="stat"><div class="number" style="color:#166534;">${totalPresent}</div><div class="label">Present</div></div>
+                        <div class="stat"><div class="number" style="color:#dc2626;">${totalAbsent}</div><div class="label">Absent</div></div>
+                        <div class="stat"><div class="number" style="color:#f59e0b;">${totalExcused}</div><div class="label">Excused</div></div>
+                        <div class="stat"><div class="number" style="color:#0d9488;">${overallRate}%</div><div class="label">Overall Rate</div></div>
+                    </div>`;
+
+            container.style.display = 'block';
+            container.innerHTML = html;
+        }
+
+        function getStudentAttendanceSummary(studentId) {
+            const records = attendanceRecords.filter(r => r.studentId === studentId);
+            if (records.length === 0) return null;
+            const present = records.filter(r => r.status === 'Present').length;
+            const absent = records.filter(r => r.status === 'Absent').length;
+            const excused = records.filter(r => r.status === 'Excused').length;
+            const total = present + absent + excused;
+            const rate = total > 0 ? ((present / total) * 100).toFixed(1) : 0;
+            return { present, absent, excused, total, rate };
+        }
+
+        // ==================== MSG HISTORY ====================
         function loadMsgHistory() {
             try {
                 const container = document.getElementById('msgHistory');
@@ -3433,25 +4185,6 @@
         }
 
         function sendWhatsApp() { showToast('WhatsApp message sent!', false); }
-
-        function loadBoardingDashboard() {
-            try {
-                const container = document.getElementById('boardingTabContent');
-                if (!container) return;
-                const boardingStudents = students.filter(s => s.isBoarding);
-                let html = `<div style="padding:10px;"><h4>🏠 Boarding Students (${boardingStudents.length})</h4>`;
-                if (boardingStudents.length === 0) { html += '<p>No boarding students registered yet.</p>'; } else {
-                    html += '<ul style="list-style:none;padding:0;">';
-                    boardingStudents.forEach(s => {
-                        html +=
-                            `<li style="padding:8px 0;border-bottom:1px solid #eee;">${escapeHtml(s.name)} - ${s.class} (${s.stream})</li>`;
-                    });
-                    html += '</ul>';
-                }
-                html += '</div>';
-                container.innerHTML = html;
-            } catch (e) { console.error("loadBoardingDashboard error:", e); }
-        }
 
         // ==================== LOAD ANALYTICS ====================
         function loadAnalytics() {
@@ -3557,10 +4290,10 @@
                 const max = sorted[sorted.length - 1];
                 const range = max - min;
                 let interpretation = '';
-                if (mad < 5) interpretation = '✅ Very consistent (low spread)';
+                if (mad < 5) interpretation = '✅ Very consistent';
                 else if (mad < 10) interpretation = '👍 Moderately consistent';
                 else if (mad < 20) interpretation = '⚠️ Noticeable variation';
-                else interpretation = '🔴 High variation (needs attention)';
+                else interpretation = '🔴 High variation';
                 html +=
                     `<tr><td><strong>${sub}</strong></td><td><strong>${median.toFixed(1)}%</strong></td><td><strong>${mad.toFixed(1)}</strong></td><td>${min.toFixed(1)}%</td><td>${max.toFixed(1)}%</td><td>${range.toFixed(1)}%</td><td>${interpretation}</td></tr>`;
             });
@@ -3719,6 +4452,18 @@
             const meanPoints = subs.length ? (totalPoints / subs.length) : 0;
             const streamPos = getStreamRank(student);
             const classPos = getClassRank(student);
+
+            const attSummary = getStudentAttendanceSummary(student.id);
+            const attHtml = attSummary ?
+                `<div class="attendance-summary" style="background:#f1f8f4;padding:10px 16px;border-radius:12px;margin:8px 0;display:flex;flex-wrap:wrap;gap:15px;justify-content:center;">
+                    <div class="stat"><div class="number" style="color:#166534;">${attSummary.present}</div><div class="label">Present</div></div>
+                    <div class="stat"><div class="number" style="color:#dc2626;">${attSummary.absent}</div><div class="label">Absent</div></div>
+                    <div class="stat"><div class="number" style="color:#f59e0b;">${attSummary.excused}</div><div class="label">Excused</div></div>
+                    <div class="stat"><div class="number" style="color:#0d9488;">${attSummary.rate}%</div><div class="label">Attendance Rate</div></div>
+                    <div class="stat"><div class="number" style="color:#0a2f2a;">${attSummary.total}</div><div class="label">Total Days</div></div>
+                </div>` :
+                '<p style="font-size:11px;color:#94a3b8;text-align:center;margin:4px 0;">No attendance records available.</p>';
+
             let html =
                 `<div class="report-card" style="font-family:'Segoe UI',system-ui,sans-serif;max-width:1000px;margin:0 auto;background:white;padding:30px;border-radius:16px;box-shadow:0 5px 20px rgba(0,0,0,0.1);">
                     <h1 style="font-size:28px;font-weight:700;text-transform:uppercase;color:#1B5E20;text-align:center;letter-spacing:1px;margin-bottom:2px;">${escapeHtml(settings.name || 'EduNexa Pro')}</h1>
@@ -3744,6 +4489,10 @@
                             <div><strong>Overall Position:</strong> ${classPos} / ${students.filter(s => s.class === student.class).length}</div>
                             <div><strong>Class Teacher:</strong> ${getTeacherForGrade(student.class, student.stream)}</div>
                         </div>
+                    </div>
+                    <div style="margin-bottom:10px;">
+                        <h4 style="font-size:13px;color:#1a3a1a;margin-bottom:4px;">📅 Attendance Summary</h4>
+                        ${attHtml}
                     </div>`;
 
             if (isJuniorSecondary) {
@@ -3835,24 +4584,26 @@
                 const passRate = (passCount / sorted.length * 100).toFixed(1);
                 let html =
                     `<div class="summary-stats"><div><strong>Total Students:</strong> ${sorted.length}</div><div><strong>Class Average:</strong> ${classAvg.toFixed(1)}%</div><div><strong>Pass Rate (≥50%):</strong> ${passRate}%</div>${stream === 'all' ? `<div><strong>Streams:</strong> ${[...new Set(sorted.map(s => s.stream))].join(', ')}</div>` : ''}</div>
-                    <div class="table-wrapper"><table class="data-table"><thead><tr><th>Rank</th><th>Student Name</th><th>Stream</th>${subs.map(sub => `<th>${sub}</th>`).join('')}<th>Total</th><th>Avg%</th><th>Level</th></tr></thead><tbody>`;
+                    <div class="table-wrapper"><table class="data-table"><thead><tr><th>Rank</th><th>Student Name</th><th>Stream</th>${subs.map(sub => `<th>${sub}</th>`).join('')}<th>Total</th><th>Avg%</th><th>Level</th><th>Attendance</th></tr></thead><tbody>`;
                 sorted.forEach((s, index) => {
                     const totalScore = total(s);
                     const average = avg(s);
                     const level = getPerformanceLevel(average);
+                    const att = getStudentAttendanceSummary(s.id);
+                    const attDisplay = att ? `${att.rate}%` : 'N/A';
                     html +=
-                        `<tr><td><strong>${index + 1}</strong></td><td><strong>${escapeHtml(s.name)}</strong></td><td>${s.stream}</td>${subs.map(sub => `<td>${getMark(s, sub)}</td>`).join('')}<td><strong>${totalScore}</strong></td><td><strong>${average.toFixed(1)}%</strong></td><td><span class="grade-badge" style="background:${level.color};">${level.code}</span></td></tr>`;
+                        `<tr><td><strong>${index + 1}</strong></td><td><strong>${escapeHtml(s.name)}</strong></td><td>${s.stream}</td>${subs.map(sub => `<td>${getMark(s, sub)}</td>`).join('')}<td><strong>${totalScore}</strong></td><td><strong>${average.toFixed(1)}%</strong></td><td><span class="grade-badge" style="background:${level.color};">${level.code}</span></td><td>${attDisplay}</td></tr>`;
                 });
                 html += `</tbody></table></div>`;
                 container.innerHTML = html;
             } catch (e) { console.error("showClassSummary error:", e);
                 document.getElementById('reportContainer').innerHTML =
-                    `<div style="text-align:center;padding:30px;color:#dc2626;"><i class="fas fa-exclamation-circle" style="font-size:32px;display:block;margin-bottom:10px;"></i>Error loading class summary. Please try again.</div>`; }
+                    `<div style="text-align:center;padding:30px;color:#dc2626;"><i class="fas fa-exclamation-circle" style="font-size:32px;display:block;margin-bottom:10px;"></i>Error loading class summary.</div>`; }
         }
 
         function showReportSelector() {
             try {
-                if (students.length === 0) { alert('No students found. Please register students first.'); return; }
+                if (students.length === 0) { alert('No students found.'); return; }
                 const streams = loadStreams();
                 const streamSelect = document.getElementById('reportStreamSelect');
                 streamSelect.innerHTML = '';
@@ -3863,7 +4614,7 @@
                 document.getElementById('multiReportModal').style.display = 'flex';
                 loadStudentsForReport();
             } catch (e) { console.error("showReportSelector error:", e);
-                alert('Error loading report selector. Please try again.'); }
+                alert('Error loading report selector.'); }
         }
 
         function loadStudentsForReport() {
@@ -3938,7 +4689,7 @@
                     alert('Failed to generate PDF. Please try again.'); } finally { document.body
                         .removeChild(loadingDiv); }
             } catch (e) { console.error("generateMultiStudentPDF error:", e);
-                showToast("Error generating reports. Please try again.", true); }
+                showToast("Error generating reports.", true); }
         }
 
         function showSubjectAnalysis() {
@@ -3948,7 +4699,7 @@
                 const container = document.getElementById('reportContainer');
                 if (students.length === 0) {
                     container.innerHTML =
-                        `<div style="text-align:center;padding:30px;color:#64748b;"><i class="fas fa-chart-bar" style="font-size:32px;display:block;margin-bottom:10px;"></i>No students available for analysis.</div>`;
+                        `<div style="text-align:center;padding:30px;color:#64748b;"><i class="fas fa-chart-bar" style="font-size:32px;display:block;margin-bottom:10px;"></i>No students available.</div>`;
                     return;
                 }
                 let html =
@@ -3997,6 +4748,8 @@
                     const row = { 'Rank': index + 1, 'Name': s.name, 'Stream': s.stream,
                         'Student Code': s.studentCode, 'UPI': s.admNo, 'Parent Phone': s.parentPhone || '' };
                     subs.forEach(sub => { row[sub] = getMark(s, sub); });
+                    const att = getStudentAttendanceSummary(s.id);
+                    row['Attendance Rate'] = att ? `${att.rate}%` : 'N/A';
                     row['Total'] = total(s);
                     row['Average'] = parseFloat(avg(s).toFixed(1));
                     row['Level'] = getPerformanceLevel(avg(s)).code;
@@ -4007,7 +4760,7 @@
                 const sheetName = stream === 'all' ? `${grade}_All_Streams` : `${grade}_${stream}`;
                 XLSX.utils.book_append_sheet(wb, ws, sheetName);
                 XLSX.writeFile(wb, `Class_Summary_${grade}_${stream === 'all' ? 'All_Streams' : stream}.xlsx`);
-                showToast(`✅ Excel file exported successfully!`, false);
+                showToast(`✅ Excel file exported!`, false);
             } catch (e) { console.error("exportClassSummaryToExcel error:", e);
                 showToast('Error exporting to Excel.', true); }
         }
@@ -4115,6 +4868,10 @@
                     created_at: new Date().toISOString()
                 };
                 parents.push(parent);
+                selectedStudents.forEach(sid => {
+                    const student = students.find(s => s.id === sid);
+                    if (student) student.parentId = parent.id;
+                });
                 await saveToFirebase();
                 await loadFromFirebase();
                 closeModal('parentModal');
@@ -4157,8 +4914,7 @@
                     </tr>`;
                 });
                 document.getElementById('parentsListBody').innerHTML = html ||
-                    '<tr><td colspan="7" style="text-align:center;padding:30px;">No parents registered. Click "+ Add Parent" to create parent accounts.</td></tr>';
-                // Update chat parent dropdown
+                    '<tr><td colspan="7" style="text-align:center;padding:30px;">No parents registered.</td></tr>';
                 const chatSelect = document.getElementById('chatParentSelect');
                 chatSelect.innerHTML = '<option value="">Select Parent</option>';
                 parents.forEach(p => {
@@ -4167,7 +4923,8 @@
                     opt.textContent = p.name;
                     chatSelect.appendChild(opt);
                 });
-            } catch (e) { console.error("Load parents error:", e); }
+            } catch (e) { console.error("Load parents error:", e);
+                showPermissionError('parentsListBody', loadParents); }
         }
 
         function filterParents() { loadParents(); }
@@ -4182,16 +4939,18 @@
                 linkedStudents.forEach(s => {
                     const av = avg(s);
                     const level = getPerformanceLevel(av);
+                    const att = getStudentAttendanceSummary(s.id);
+                    const attDisplay = att ? `${att.rate}% (${att.present}/${att.total})` : 'N/A';
                     html += `<div class="parent-card">
                         <h5>${escapeHtml(s.name)} (${s.class} - ${s.stream})</h5>
                         <p>📊 Average: <strong>${av.toFixed(1)}%</strong> <span class="grade-badge" style="background:${level.color};">${level.code}</span></p>
+                        <p>📅 Attendance: ${attDisplay}</p>
                         <p>📖 Subjects: ${getSubjects(s.class).join(', ')}</p>
                         <p>🏠 ${s.isBoarding ? 'Boarding' : 'Day Scholar'}</p>
                         <button class="action-btn info" onclick="window.showReportForStudent(${students.indexOf(s)})">View Report</button>
                     </div>`;
                 });
             }
-            // Fee summary for linked students
             const totalFee = feeStructures.reduce((sum, f) => sum + f.amount, 0);
             const paid = payments.filter(p => parent.studentIds && parent.studentIds.includes(p.studentId))
                 .reduce((s, p) => s + p.amount, 0);
@@ -4290,7 +5049,6 @@
             await saveToFirebase();
             await loadFromFirebase();
             loadChatMessages();
-            // Add notification
             const parent = parents.find(p => p.id == parentId);
             if (parent) {
                 notifications.push({
@@ -4349,11 +5107,10 @@
 
         function loadFeeData() {
             try {
-                // Fee structures
                 const container = document.getElementById('feeStructuresContainer');
                 let html = '';
                 if (feeStructures.length === 0) { html =
-                        '<p style="color:#64748b;text-align:center;padding:10px;">No fee structures defined. Click "+ Add Fee Structure" to create one.</p>'; } else {
+                        '<p style="color:#64748b;text-align:center;padding:10px;">No fee structures defined.</p>'; } else {
                     html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">';
                     feeStructures.forEach((f, i) => {
                         html +=
@@ -4362,14 +5119,11 @@
                     html += '</div>';
                 }
                 container.innerHTML = html;
-
-                // Load fee students
                 window.loadFeeStudents();
-
-                // Payment history
                 loadPaymentHistory();
                 loadFeeSummary();
-            } catch (e) { console.error("Load fee data error:", e); }
+            } catch (e) { console.error("Load fee data error:", e);
+                showPermissionError('feeStructuresContainer', loadFeeData); }
         }
 
         async function deleteFeeStructure(index) {
@@ -4416,7 +5170,8 @@
                     });
                 }
                 document.getElementById('feeStudentsBody').innerHTML = html;
-            } catch (e) { console.error("Load fee students error:", e); }
+            } catch (e) { console.error("Load fee students error:", e);
+                showPermissionError('feeStudentsBody', loadFeeStudents); }
         }
 
         function recordPaymentForStudent(studentId) {
@@ -4506,7 +5261,6 @@
             });
             msg += `\nThank you for your cooperation.\nEduNexa Pro`;
             showToast(`📱 Bulk reminder sent to ${outstanding.length} parents via WhatsApp.`, false);
-            // In production, this would integrate with Africa's Talking API
             console.log('Bulk reminder:', msg);
         }
 
@@ -4524,7 +5278,6 @@
                     opt.value = s;
                     opt.textContent = s;
                     examStream.appendChild(opt); });
-                // Subjects
                 const grade = document.getElementById('examGrade').value;
                 const subs = getSubjects(grade);
                 const container = document.getElementById('examSubjectsContainer');
@@ -4582,7 +5335,7 @@
                 const container = document.getElementById('examsContainer');
                 if (filtered.length === 0) {
                     container.innerHTML =
-                        '<p style="color:#64748b;text-align:center;padding:20px;">No exams found. Click "+ Add Exam" to create one.</p>';
+                        '<p style="color:#64748b;text-align:center;padding:20px;">No exams found.</p>';
                     return;
                 }
                 let html =
@@ -4598,8 +5351,6 @@
                 });
                 html += '</div>';
                 container.innerHTML = html;
-
-                // Update exam marks dropdown
                 const examSelect = document.getElementById('examMarkExam');
                 examSelect.innerHTML = '<option value="">Select Exam</option>';
                 exams.forEach(e => {
@@ -4608,7 +5359,8 @@
                     opt.textContent = `${e.name} (${e.grade} - ${e.stream})`;
                     examSelect.appendChild(opt);
                 });
-            } catch (e) { console.error("Load exams error:", e); }
+            } catch (e) { console.error("Load exams error:", e);
+                showPermissionError('examsContainer', loadExams); }
         }
 
         async function deleteExam(index) {
@@ -4666,12 +5418,12 @@
                 html += `</tbody></table></div>
                         <div style="margin-top:10px;"><button class="action-btn warning" onclick="window.saveExamMarks()">💾 Save Exam Marks</button></div>`;
                 container.innerHTML = html;
-                // Attach auto-save
                 document.querySelectorAll('.exam-mark-input').forEach(inp => {
                     inp.removeEventListener('change', handleExamMarkChange);
                     inp.addEventListener('change', handleExamMarkChange);
                 });
-            } catch (e) { console.error("Load exam marks error:", e); }
+            } catch (e) { console.error("Load exam marks error:", e);
+                showPermissionError('examMarksContainer', loadExamMarks); }
         }
 
         async function handleExamMarkChange() {
@@ -4688,7 +5440,6 @@
                     examMarks.push({ examId, studentId, subject, marks: val });
                 }
                 await saveToFirebase();
-                // Update row total
                 const row = this.closest('tr');
                 let total = 0;
                 row.querySelectorAll('.exam-mark-input').forEach(inp => {
@@ -4768,7 +5519,7 @@
                 const container = document.getElementById('timetablesContainer');
                 if (filtered.length === 0) {
                     container.innerHTML =
-                        '<p style="color:#64748b;text-align:center;padding:20px;">No timetables found. Click "+ Add Timetable" to create one.</p>';
+                        '<p style="color:#64748b;text-align:center;padding:20px;">No timetables found.</p>';
                     return;
                 }
                 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -4781,26 +5532,24 @@
                 });
                 for (const [key, entries] of Object.entries(grouped)) {
                     const [grade, stream] = key.split('_');
-                    html += `<div style="margin-bottom:20px;"><h4>${grade} - ${stream}</h4><div class="timetable-grid" style="display:grid;grid-template-columns:80px repeat(5,1fr);gap:4px;font-size:12px;">`;
+                    html += `<div style="margin-bottom:20px;"><h4>${grade} - ${stream}</h4><div class="timetable-grid">`;
                     html +=
-                        `<div class="cell header" style="background:#0a2f2a;color:white;font-weight:600;padding:6px 4px;border-radius:6px;text-align:center;">Time</div>`;
+                        `<div class="cell header">Time</div>`;
                     days.forEach(d => {
                         html +=
-                            `<div class="cell header" style="background:#0a2f2a;color:white;font-weight:600;padding:6px 4px;border-radius:6px;text-align:center;">${d.substring(0,3)}</div>`;
+                            `<div class="cell header">${d.substring(0,3)}</div>`;
                     });
                     const timeSlots = ['7:00-7:40', '7:40-8:20', '8:20-9:00', '9:00-9:40', '10:00-10:40',
                         '10:40-11:20', '11:20-12:00', '12:00-12:40', '13:40-14:20', '14:20-15:00'
                     ];
                     timeSlots.forEach(slot => {
                         html +=
-                            `<div class="cell time" style="background:#e8f5e9;font-weight:600;padding:6px 4px;border-radius:6px;text-align:center;font-size:10px;">${slot}</div>`;
+                            `<div class="cell time">${slot}</div>`;
                         days.forEach(day => {
                             const entry = entries.find(t => t.day === day && t.start === slot.split(
                             '-')[0]);
                             html +=
-                                `<div class="cell" style="background:#f8fafc;padding:6px 4px;border-radius:6px;text-align:center;min-height:50px;display:flex;flex-direction:column;justify-content:center;align-items:center;border:1px solid #e2e8f0;font-size:11px;">
-                                ${entry ? `<strong>${entry.subject}</strong><br><span style="font-size:9px;color:#64748b;">${entry.teacher}</span>` : ''}
-                            </div>`;
+                                `<div class="cell">${entry ? `<strong>${entry.subject}</strong><br><span style="font-size:9px;color:#64748b;">${entry.teacher}</span>` : ''}</div>`;
                         });
                     });
                     html += `</div>
@@ -4809,7 +5558,8 @@
                             </div>`;
                 }
                 container.innerHTML = html;
-            } catch (e) { console.error("Load timetables error:", e); }
+            } catch (e) { console.error("Load timetables error:", e);
+                showPermissionError('timetablesContainer', loadTimetables); }
         }
 
         async function deleteTimetable(index) {
@@ -4900,8 +5650,9 @@
                     </tr>`;
                 });
                 document.getElementById('staffListBody').innerHTML = html ||
-                    '<tr><td colspan="7" style="text-align:center;padding:30px;">No staff members. Click "+ Add Staff" to create one.</td></tr>';
-            } catch (e) { console.error("Load staff error:", e); }
+                    '<tr><td colspan="7" style="text-align:center;padding:30px;">No staff members.</td></tr>';
+            } catch (e) { console.error("Load staff error:", e);
+                showPermissionError('staffListBody', loadStaff); }
         }
 
         function filterStaff() { loadStaff(); }
@@ -4998,7 +5749,7 @@
                 const container = document.getElementById('booksContainer');
                 if (filtered.length === 0) {
                     container.innerHTML =
-                        '<p style="color:#64748b;text-align:center;padding:20px;">No books found. Click "+ Add Book" to add one.</p>';
+                        '<p style="color:#64748b;text-align:center;padding:20px;">No books found.</p>';
                     return;
                 }
                 let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;">';
@@ -5007,9 +5758,9 @@
                     const statusLabel = b.available > 0 ?
                         `<span class="borrowing-status available">${b.available} available</span>` :
                         '<span class="borrowing-status borrowed">All borrowed</span>';
-                    html += `<div class="book-card" style="background:white;border:1px solid #e2e8f0;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;">
-                        <div class="book-title" style="font-weight:600;color:#1a3a1a;">${escapeHtml(b.title)}</div>
-                        <div class="book-meta" style="font-size:12px;color:#64748b;">by ${escapeHtml(b.author)}</div>
+                    html += `<div class="book-card">
+                        <div class="book-title">${escapeHtml(b.title)}</div>
+                        <div class="book-meta">by ${escapeHtml(b.author)}</div>
                         <div style="font-size:12px;color:#64748b;">📚 ${b.category} | ISBN: ${b.isbn || 'N/A'}</div>
                         <div>${statusLabel}</div>
                         <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;">
@@ -5020,10 +5771,9 @@
                 });
                 html += '</div>';
                 container.innerHTML = html;
-
-                // Borrowing records
                 loadBorrowingRecords();
-            } catch (e) { console.error("Load library error:", e); }
+            } catch (e) { console.error("Load library error:", e);
+                showPermissionError('booksContainer', loadLibrary); }
         }
 
         function filterBooks() { loadLibrary(); }
@@ -5205,13 +5955,13 @@
                 const container = document.getElementById('homeworkContainer');
                 if (filtered.length === 0) {
                     container.innerHTML =
-                        '<p style="color:#64748b;text-align:center;padding:20px;">No assignments found. Click "+ Add Assignment" to create one.</p>';
+                        '<p style="color:#64748b;text-align:center;padding:20px;">No assignments found.</p>';
                     return;
                 }
                 let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:15px;">';
                 filtered.forEach((h, i) => {
                     const isOverdue = new Date(h.dueDate) < new Date();
-                    html += `<div class="assignment-item" style="background:#f8fafc;padding:12px 16px;border-radius:12px;margin-bottom:8px;border-left:4px solid ${isOverdue ? '#dc2626' : '#0284c7'};">
+                    html += `<div class="assignment-item" style="border-left:4px solid ${isOverdue ? '#dc2626' : '#0284c7'};">
                         <h5>${escapeHtml(h.title)}</h5>
                         <p style="font-size:13px;color:#64748b;">${escapeHtml(h.description)}</p>
                         <div style="font-size:12px;color:#64748b;margin-top:4px;">
@@ -5223,7 +5973,8 @@
                 });
                 html += '</div>';
                 container.innerHTML = html;
-            } catch (e) { console.error("Load homework error:", e); }
+            } catch (e) { console.error("Load homework error:", e);
+                showPermissionError('homeworkContainer', loadHomework); }
         }
 
         async function deleteHomework(index) {
@@ -5285,7 +6036,7 @@
                 const container = document.getElementById('transportContainer');
                 if (busRoutes.length === 0) {
                     container.innerHTML =
-                        '<p style="color:#64748b;text-align:center;padding:20px;">No bus routes defined. Click "+ Add Route" to create one.</p>';
+                        '<p style="color:#64748b;text-align:center;padding:20px;">No bus routes defined.</p>';
                     return;
                 }
                 let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:15px;">';
@@ -5303,7 +6054,8 @@
                 });
                 html += '</div>';
                 container.innerHTML = html;
-            } catch (e) { console.error("Load transport error:", e); }
+            } catch (e) { console.error("Load transport error:", e);
+                showPermissionError('transportContainer', loadTransport); }
         }
 
         async function deleteBusRoute(index) {
@@ -5313,6 +6065,420 @@
                 await loadFromFirebase();
                 loadTransport();
                 showToast('Bus route deleted.', false);
+            }
+        }
+
+        // ==================== BOARDING MANAGEMENT ====================
+        function loadBoardingDashboard() {
+            try {
+                const container = document.getElementById('boardingTabContent');
+                if (!container) return;
+                const boardingStudents = students.filter(s => s.isBoarding);
+                const dormCount = dormitories.length;
+                const mealCount = meals.length;
+                const healthCount = healthRecords.length;
+                const gateCount = gatepasses.length;
+
+                let html = `
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:15px;">
+                        <div class="stat-card"><div class="stat-icon"><i class="fas fa-bed"></i></div><div><h3>${boardingStudents.length}</h3><p>Boarding Students</p></div></div>
+                        <div class="stat-card"><div class="stat-icon"><i class="fas fa-building"></i></div><div><h3>${dormCount}</h3><p>Dormitories</p></div></div>
+                        <div class="stat-card"><div class="stat-icon"><i class="fas fa-utensils"></i></div><div><h3>${mealCount}</h3><p>Meal Records</p></div></div>
+                        <div class="stat-card"><div class="stat-icon"><i class="fas fa-heartbeat"></i></div><div><h3>${healthCount}</h3><p>Health Records</p></div></div>
+                        <div class="stat-card"><div class="stat-icon"><i class="fas fa-door-open"></i></div><div><h3>${gateCount}</h3><p>Gate Passes</p></div></div>
+                    </div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+                        <button class="action-btn primary" onclick="window.showBoardingTab('dormitory')">🏢 Dormitories</button>
+                        <button class="action-btn info" onclick="window.showBoardingTab('meals')">🍽️ Meals</button>
+                        <button class="action-btn warning" onclick="window.showBoardingTab('health')">🏥 Health</button>
+                        <button class="action-btn purple" onclick="window.showBoardingTab('gatepass')">🚪 Gate Pass</button>
+                    </div>
+                    <div id="boardingSubContent">
+                        <p style="color:#64748b;text-align:center;padding:20px;">Select a tab above to manage boarding details.</p>
+                    </div>
+                `;
+                container.innerHTML = html;
+                window.showBoardingTab('dormitory');
+            } catch (e) { console.error("loadBoardingDashboard error:", e); }
+        }
+
+        function showBoardingTab(tab) {
+            try {
+                const container = document.getElementById('boardingSubContent') || document.getElementById(
+                'boardingTabContent');
+                if (!container) return;
+
+                switch (tab) {
+                    case 'dormitory':
+                        renderDormitories(container);
+                        break;
+                    case 'meals':
+                        renderMeals(container);
+                        break;
+                    case 'health':
+                        renderHealth(container);
+                        break;
+                    case 'gatepass':
+                        renderGatepasses(container);
+                        break;
+                }
+            } catch (e) { console.error("showBoardingTab error:", e); }
+        }
+
+        // ===== DORMITORY =====
+        function renderDormitories(container) {
+            let html = `
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;">
+                    <button class="action-btn primary" onclick="window.openDormitoryModal()">+ Add Dormitory</button>
+                    <button class="action-btn info" onclick="window.loadBoardingDashboard()">Refresh</button>
+                </div>
+                <div id="dormitoryList">`;
+
+            if (dormitories.length === 0) {
+                html += '<p style="color:#64748b;text-align:center;padding:20px;">No dormitories created yet.</p>';
+            } else {
+                dormitories.forEach((d, i) => {
+                    const assignedStudents = d.studentIds ? d.studentIds.map(id => students.find(s => s.id ===
+                        id)).filter(Boolean) : [];
+                    html += `<div class="boarding-card">
+                        <h4>🏢 ${escapeHtml(d.name)}</h4>
+                        <div class="meta">Capacity: ${d.capacity} | Occupied: ${assignedStudents.length}</div>
+                        <div class="meta">Students: ${assignedStudents.map(s => escapeHtml(s.name)).join(', ') || 'None'}</div>
+                        <div style="margin-top:6px;">
+                            <i class="fas fa-trash delete-icon" onclick="window.deleteDormitory(${i})" style="font-size:14px;"></i>
+                            <button class="action-btn info" style="padding:2px 12px;font-size:11px;margin-left:6px;" onclick="window.editDormitory(${i})">Edit</button>
+                        </div>
+                    </div>`;
+                });
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function openDormitoryModal() {
+            try {
+                const select = document.getElementById('dormStudents');
+                select.innerHTML = '';
+                students.filter(s => s.isBoarding).forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = `${s.name} (${s.class} - ${s.stream})`;
+                    select.appendChild(opt);
+                });
+                document.getElementById('dormName').value = '';
+                document.getElementById('dormCapacity').value = '';
+                document.getElementById('dormitoryModal').dataset.mode = 'add';
+                document.getElementById('dormitoryModal').style.display = 'flex';
+            } catch (e) { console.error("Open dormitory modal error:", e); }
+        }
+
+        async function saveDormitory() {
+            try {
+                const name = document.getElementById('dormName').value.trim();
+                const capacity = parseInt(document.getElementById('dormCapacity').value) || 0;
+                const studentIds = Array.from(document.getElementById('dormStudents').selectedOptions).map(o => parseInt(
+                    o.value));
+                if (!name || capacity <= 0) { showToast('Please enter name and capacity.', true); return; }
+                const mode = document.getElementById('dormitoryModal').dataset.mode;
+                if (mode === 'edit') {
+                    const idx = parseInt(document.getElementById('dormitoryModal').dataset.index);
+                    dormitories[idx].name = name;
+                    dormitories[idx].capacity = capacity;
+                    dormitories[idx].studentIds = studentIds;
+                } else {
+                    dormitories.push({ id: Date.now(), name, capacity, studentIds,
+                        created_at: new Date().toISOString() });
+                }
+                await saveToFirebase();
+                await loadFromFirebase();
+                closeModal('dormitoryModal');
+                showToast(`✅ Dormitory ${mode === 'edit' ? 'updated' : 'added'}!`, false);
+                loadBoardingDashboard();
+                showBoardingTab('dormitory');
+            } catch (e) { console.error("Save dormitory error:", e);
+                showToast('Error saving dormitory.', true); }
+        }
+
+        async function deleteDormitory(index) {
+            if (confirm('Delete this dormitory?')) {
+                dormitories.splice(index, 1);
+                await saveToFirebase();
+                await loadFromFirebase();
+                loadBoardingDashboard();
+                showBoardingTab('dormitory');
+                showToast('Dormitory deleted.', false);
+            }
+        }
+
+        function editDormitory(index) {
+            const d = dormitories[index];
+            if (!d) return;
+            document.getElementById('dormName').value = d.name;
+            document.getElementById('dormCapacity').value = d.capacity;
+            const select = document.getElementById('dormStudents');
+            select.innerHTML = '';
+            students.filter(s => s.isBoarding).forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = `${s.name} (${s.class} - ${s.stream})`;
+                if (d.studentIds && d.studentIds.includes(s.id)) opt.selected = true;
+                select.appendChild(opt);
+            });
+            document.getElementById('dormitoryModal').dataset.mode = 'edit';
+            document.getElementById('dormitoryModal').dataset.index = index;
+            document.getElementById('dormitoryModal').style.display = 'flex';
+        }
+
+        // ===== MEALS =====
+        function renderMeals(container) {
+            let html = `
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;">
+                    <button class="action-btn primary" onclick="window.openMealModal()">+ Record Meal</button>
+                    <button class="action-btn info" onclick="window.loadBoardingDashboard()">Refresh</button>
+                </div>
+                <div id="mealList">`;
+
+            if (meals.length === 0) {
+                html += '<p style="color:#64748b;text-align:center;padding:20px;">No meal records yet.</p>';
+            } else {
+                const sorted = [...meals].sort((a, b) => new Date(b.date) - new Date(a.date));
+                sorted.forEach((m, i) => {
+                    const student = students.find(s => s.id === m.studentId);
+                    const statusClass = m.status === 'Present' ? 'present' : 'absent';
+                    html += `<div class="boarding-detail">
+                        <span class="label">${student ? escapeHtml(student.name) : 'Unknown'}</span>
+                        <span>${m.type} | ${m.date}</span>
+                        <span class="status-badge ${statusClass}">${m.status}</span>
+                        <i class="fas fa-trash delete-icon" onclick="window.deleteMealRecord(${i})" style="font-size:14px;"></i>
+                    </div>`;
+                });
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function openMealModal() {
+            try {
+                const select = document.getElementById('mealStudent');
+                select.innerHTML = '';
+                students.filter(s => s.isBoarding).forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = `${s.name} (${s.class} - ${s.stream})`;
+                    select.appendChild(opt);
+                });
+                document.getElementById('mealDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('mealModal').style.display = 'flex';
+            } catch (e) { console.error("Open meal modal error:", e); }
+        }
+
+        async function saveMealRecord() {
+            try {
+                const studentId = parseInt(document.getElementById('mealStudent').value);
+                const type = document.getElementById('mealType').value;
+                const date = document.getElementById('mealDate').value;
+                const status = document.getElementById('mealStatus').value;
+                if (!studentId || !date) { showToast('Please select student and date.', true); return; }
+                meals.push({ id: Date.now(), studentId, type, date, status, created_at: new Date().toISOString() });
+                await saveToFirebase();
+                await loadFromFirebase();
+                closeModal('mealModal');
+                showToast('✅ Meal recorded!', false);
+                loadBoardingDashboard();
+                showBoardingTab('meals');
+            } catch (e) { console.error("Save meal record error:", e);
+                showToast('Error saving meal record.', true); }
+        }
+
+        async function deleteMealRecord(index) {
+            if (confirm('Delete this meal record?')) {
+                meals.splice(index, 1);
+                await saveToFirebase();
+                await loadFromFirebase();
+                loadBoardingDashboard();
+                showBoardingTab('meals');
+                showToast('Meal record deleted.', false);
+            }
+        }
+
+        // ===== HEALTH =====
+        function renderHealth(container) {
+            let html = `
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;">
+                    <button class="action-btn primary" onclick="window.openHealthModal()">+ Add Health Record</button>
+                    <button class="action-btn info" onclick="window.loadBoardingDashboard()">Refresh</button>
+                </div>
+                <div id="healthList">`;
+
+            if (healthRecords.length === 0) {
+                html += '<p style="color:#64748b;text-align:center;padding:20px;">No health records yet.</p>';
+            } else {
+                const sorted = [...healthRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
+                sorted.forEach((h, i) => {
+                    const student = students.find(s => s.id === h.studentId);
+                    html += `<div class="boarding-detail">
+                        <span class="label">${student ? escapeHtml(student.name) : 'Unknown'}</span>
+                        <span>${escapeHtml(h.condition)}</span>
+                        <span style="font-size:12px;color:#64748b;">${h.date}</span>
+                        <i class="fas fa-trash delete-icon" onclick="window.deleteHealthRecord(${i})" style="font-size:14px;"></i>
+                    </div>`;
+                });
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function openHealthModal() {
+            try {
+                const select = document.getElementById('healthStudent');
+                select.innerHTML = '';
+                students.filter(s => s.isBoarding).forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = `${s.name} (${s.class} - ${s.stream})`;
+                    select.appendChild(opt);
+                });
+                document.getElementById('healthCondition').value = '';
+                document.getElementById('healthNotes').value = '';
+                document.getElementById('healthDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('healthModal').style.display = 'flex';
+            } catch (e) { console.error("Open health modal error:", e); }
+        }
+
+        async function saveHealthRecord() {
+            try {
+                const studentId = parseInt(document.getElementById('healthStudent').value);
+                const condition = document.getElementById('healthCondition').value.trim();
+                const notes = document.getElementById('healthNotes').value.trim();
+                const date = document.getElementById('healthDate').value;
+                if (!studentId || !condition || !date) { showToast('Please fill in all fields.', true); return; }
+                healthRecords.push({ id: Date.now(), studentId, condition, notes, date,
+                    created_at: new Date().toISOString() });
+                await saveToFirebase();
+                await loadFromFirebase();
+                closeModal('healthModal');
+                showToast('✅ Health record saved!', false);
+                loadBoardingDashboard();
+                showBoardingTab('health');
+            } catch (e) { console.error("Save health record error:", e);
+                showToast('Error saving health record.', true); }
+        }
+
+        async function deleteHealthRecord(index) {
+            if (confirm('Delete this health record?')) {
+                healthRecords.splice(index, 1);
+                await saveToFirebase();
+                await loadFromFirebase();
+                loadBoardingDashboard();
+                showBoardingTab('health');
+                showToast('Health record deleted.', false);
+            }
+        }
+
+        // ===== GATE PASS =====
+        function renderGatepasses(container) {
+            let html = `
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;">
+                    <button class="action-btn primary" onclick="window.openGatepassModal()">+ Request Gate Pass</button>
+                    <button class="action-btn info" onclick="window.loadBoardingDashboard()">Refresh</button>
+                </div>
+                <div id="gatepassList">`;
+
+            if (gatepasses.length === 0) {
+                html += '<p style="color:#64748b;text-align:center;padding:20px;">No gate pass requests.</p>';
+            } else {
+                const sorted = [...gatepasses].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                sorted.forEach((g, i) => {
+                    const student = students.find(s => s.id === g.studentId);
+                    const statusClass = g.status === 'Approved' ? 'approved' : g.status === 'Rejected' ?
+                        'rejected' : 'pending';
+                    html += `<div class="boarding-detail">
+                        <span class="label">${student ? escapeHtml(student.name) : 'Unknown'}</span>
+                        <span style="font-size:12px;">${escapeHtml(g.reason)}</span>
+                        <span style="font-size:12px;color:#64748b;">${g.outTime} → ${g.returnTime}</span>
+                        <span class="status-badge ${statusClass}">${g.status || 'Pending'}</span>
+                        <div style="display:flex;gap:4px;">
+                            ${g.status === 'Pending' ? `<button class="action-btn info" style="padding:2px 8px;font-size:10px;" onclick="window.approveGatePass(${i})">Approve</button>
+                            <button class="action-btn danger" style="padding:2px 8px;font-size:10px;" onclick="window.rejectGatePass(${i})">Reject</button>` : ''}
+                            <i class="fas fa-trash delete-icon" onclick="window.deleteGatePass(${i})" style="font-size:14px;"></i>
+                        </div>
+                    </div>`;
+                });
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function openGatepassModal() {
+            try {
+                const select = document.getElementById('gateStudent');
+                select.innerHTML = '';
+                students.filter(s => s.isBoarding).forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = `${s.name} (${s.class} - ${s.stream})`;
+                    select.appendChild(opt);
+                });
+                document.getElementById('gateReason').value = '';
+                document.getElementById('gateOutTime').value = '';
+                document.getElementById('gateReturnTime').value = '';
+                document.getElementById('gatepassModal').style.display = 'flex';
+            } catch (e) { console.error("Open gatepass modal error:", e); }
+        }
+
+        async function saveGatePass() {
+            try {
+                const studentId = parseInt(document.getElementById('gateStudent').value);
+                const reason = document.getElementById('gateReason').value.trim();
+                const outTime = document.getElementById('gateOutTime').value;
+                const returnTime = document.getElementById('gateReturnTime').value;
+                if (!studentId || !reason || !outTime || !returnTime) { showToast('Please fill in all fields.',
+                    true); return; }
+                gatepasses.push({
+                    id: Date.now(),
+                    studentId,
+                    reason,
+                    outTime,
+                    returnTime,
+                    status: 'Pending',
+                    created_at: new Date().toISOString()
+                });
+                await saveToFirebase();
+                await loadFromFirebase();
+                closeModal('gatepassModal');
+                showToast('✅ Gate pass requested!', false);
+                loadBoardingDashboard();
+                showBoardingTab('gatepass');
+            } catch (e) { console.error("Save gate pass error:", e);
+                showToast('Error saving gate pass.', true); }
+        }
+
+        async function approveGatePass(index) {
+            gatepasses[index].status = 'Approved';
+            await saveToFirebase();
+            await loadFromFirebase();
+            loadBoardingDashboard();
+            showBoardingTab('gatepass');
+            showToast('✅ Gate pass approved!', false);
+        }
+
+        async function rejectGatePass(index) {
+            gatepasses[index].status = 'Rejected';
+            await saveToFirebase();
+            await loadFromFirebase();
+            loadBoardingDashboard();
+            showBoardingTab('gatepass');
+            showToast('❌ Gate pass rejected.', false);
+        }
+
+        async function deleteGatePass(index) {
+            if (confirm('Delete this gate pass?')) {
+                gatepasses.splice(index, 1);
+                await saveToFirebase();
+                await loadFromFirebase();
+                loadBoardingDashboard();
+                showBoardingTab('gatepass');
+                showToast('Gate pass deleted.', false);
             }
         }
 
@@ -5361,6 +6527,7 @@
         window.toggleSidebar = toggleSidebar;
         window.closeModal = closeModal;
         window.showSection = showSection;
+        window.selectPortal = selectPortal;
         window.filterStudents = filterStudents;
         window.filterTeachers = filterTeachers;
         window.resetFilters = resetFilters;
@@ -5392,22 +6559,11 @@
         window.switchSheet = switchSheet;
         window.syncMarks = syncMarks;
         window.loadRankings = loadRankings;
-        window.loadAttendance = loadAttendance;
-        window.markAttendance = markAttendance;
+        window.loadMsgHistory = loadMsgHistory;
         window.sendWhatsApp = sendWhatsApp;
         window.promoteAll = promoteAll;
         window.saveSettings = saveSettings;
         window.resetData = resetData;
-        window.showBoardingTab = showBoardingTab;
-        window.openBoardingModal = openBoardingModal;
-        window.saveDormitoryAssignment = saveDormitoryAssignment;
-        window.saveMealRecord = saveMealRecord;
-        window.saveHealthRecord = saveHealthRecord;
-        window.saveGatePass = saveGatePass;
-        window.approveGatePass = approveGatePass;
-        window.deleteMealRecord = deleteMealRecord;
-        window.deleteHealthRecord = deleteHealthRecord;
-        window.deleteGatePass = deleteGatePass;
         window.loadAnalytics = loadAnalytics;
         window.copyPortalUrl = copyPortalUrl;
         window.loadStudentsForReport = loadStudentsForReport;
@@ -5446,7 +6602,6 @@
         window.loadBoardingDashboard = loadBoardingDashboard;
         window.loadMsgHistory = loadMsgHistory;
         window.loadRankings = loadRankings;
-        window.loadAttendance = loadAttendance;
         window.loadPayments = loadPayments;
         window.loadAnalytics = loadAnalytics;
         window.exportData = exportData;
@@ -5525,6 +6680,36 @@
         window.toggleNotifications = toggleNotifications;
         window.updateNotificationBadge = updateNotificationBadge;
 
+        // Boarding exports
+        window.showBoardingTab = showBoardingTab;
+        window.openDormitoryModal = openDormitoryModal;
+        window.saveDormitory = saveDormitory;
+        window.deleteDormitory = deleteDormitory;
+        window.editDormitory = editDormitory;
+        window.openMealModal = openMealModal;
+        window.saveMealRecord = saveMealRecord;
+        window.deleteMealRecord = deleteMealRecord;
+        window.openHealthModal = openHealthModal;
+        window.saveHealthRecord = saveHealthRecord;
+        window.deleteHealthRecord = deleteHealthRecord;
+        window.openGatepassModal = openGatepassModal;
+        window.saveGatePass = saveGatePass;
+        window.approveGatePass = approveGatePass;
+        window.rejectGatePass = rejectGatePass;
+        window.deleteGatePass = deleteGatePass;
+
+        // Attendance exports
+        window.loadAttendanceEntry = loadAttendanceEntry;
+        window.saveAttendance = saveAttendance;
+        window.markAllPresent = markAllPresent;
+        window.loadAttendanceHistory = loadAttendanceHistory;
+        window.loadTodayAttendanceWidget = loadTodayAttendanceWidget;
+        window.getStudentAttendanceSummary = getStudentAttendanceSummary;
+
+        // Fee structure settings
+        window.renderFeeStructureSettings = renderFeeStructureSettings;
+        window.saveFeeStructureSettings = saveFeeStructureSettings;
+
         // ==================== AUTO LOGIN CHECK ====================
         auth.onAuthStateChanged(async (user) => {
             if (user) {
@@ -5544,6 +6729,11 @@
             true));
 
         console.log('✅ EduNexa Pro – All Modules Loaded Successfully!');
+        console.log('📦 Collections: students, teachers, parents, staff, attendance, fees, exams, timetables, books, homework, busRoutes, boarding (dormitories, meals, health, gatepasses)');
+        console.log('🔐 Roles: superadmin, admin, teacher, parent, accountant, librarian, nurse');
+        console.log('🔄 Retry mechanism enabled with 3 attempts, 5s delay');
+        console.log('📦 Caching enabled – data persists between sessions');
+        console.log('⛔ Permission errors will show user-friendly messages');
     </script>
 </body>
 </html>
