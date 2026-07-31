@@ -1137,6 +1137,33 @@
         .retry-btn:hover {
             background: #0369a1;
         }
+        .permission-error-container {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            color: #991b1b;
+            margin: 20px 0;
+        }
+        .permission-error-container i {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 10px;
+            color: #dc2626;
+        }
+        .permission-error-container .error-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .permission-error-container .error-desc {
+            font-size: 13px;
+            margin-top: 4px;
+            color: #7f1d1d;
+        }
+        .permission-error-container .retry-btn {
+            margin-top: 10px;
+        }
         @media print {
             body * {
                 visibility: hidden;
@@ -1455,32 +1482,31 @@
         .analytics-enhanced .bronze {
             color: #cd7f32;
         }
-        .permission-error-container {
-            background: #fef2f2;
-            border: 1px solid #fca5a5;
+        .collection-status {
+            background: #f8fafc;
             border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            color: #991b1b;
-            margin: 20px 0;
-        }
-        .permission-error-container i {
-            font-size: 32px;
-            display: block;
-            margin-bottom: 10px;
-            color: #dc2626;
-        }
-        .permission-error-container .error-title {
-            font-size: 16px;
-            font-weight: 600;
-        }
-        .permission-error-container .error-desc {
+            padding: 12px 16px;
+            margin: 8px 0;
             font-size: 13px;
-            margin-top: 4px;
-            color: #7f1d1d;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
         }
-        .permission-error-container .retry-btn {
-            margin-top: 10px;
+        .collection-status .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .collection-status .status-dot.created {
+            background: #166534;
+        }
+        .collection-status .status-dot.error {
+            background: #dc2626;
+        }
+        .collection-status .status-dot.pending {
+            background: #f59e0b;
         }
     </style>
 </head>
@@ -1640,6 +1666,11 @@
                     <div class="stat-card"><div class="stat-icon"><i class="fas fa-user-clock" style="color:#f59e0b;"></i></div><div><h3 id="todayExcused">0</h3><p>Excused</p></div></div>
                     <div class="stat-card"><div class="stat-icon"><i class="fas fa-percent" style="color:#0d9488;"></i></div><div><h3 id="todayAttendanceRate">0%</h3><p>Attendance Rate</p></div></div>
                 </div>
+            </div>
+            <!-- Collection Status -->
+            <div class="section-card">
+                <div class="section-header"><h3>📁 Database Collections Status</h3><button class="action-btn info" onclick="window.checkCollections()">Check All</button><button class="action-btn primary" onclick="window.createMissingCollections()">Create Missing</button></div>
+                <div id="collectionStatusContainer"></div>
             </div>
         </div>
 
@@ -2080,6 +2111,7 @@
         //  EDUNEXA PRO – COMPLETE SURGICAL FIX with PERMISSION HANDLING
         //  All modules: Parent Portal, Staff Portal, Attendance, Fees, Boarding, etc.
         //  Enhanced error handling, caching, and retry mechanism.
+        //  INCLUDES: createMissingCollections() and collection status checker.
         // ======================================================================
 
         // ==================== FIREBASE CONFIG ====================
@@ -2149,6 +2181,9 @@
         let loadAttempts = 0;
         const MAX_RETRIES = 3;
         const RETRY_DELAY = 5000; // 5 seconds
+
+        // ===== COLLECTION STATUS =====
+        let collectionStatus = {};
 
         // ===== IMPORT GLOBALS =====
         let importFileData = null;
@@ -2338,7 +2373,143 @@
             `;
         }
 
-        // ==================== FIREBASE CRUD with Error Handling & Caching ====================
+        // ================================================================
+        //  CREATE MISSING COLLECTIONS (Step 1)
+        // ================================================================
+        async function createMissingCollections() {
+            if (!currentUser) {
+                showToast('Please log in first.', true);
+                return;
+            }
+            try {
+                const collections = [
+                    { name: 'parents', data: { placeholder: true, created: new Date().toISOString() } },
+                    { name: 'staff', data: { placeholder: true, created: new Date().toISOString() } },
+                    { name: 'attendance', data: { placeholder: true, created: new Date().toISOString() } },
+                    { name: 'fees', data: { placeholder: true, created: new Date().toISOString() } },
+                    { name: 'exams', data: { placeholder: true, created: new Date().toISOString() } },
+                    { name: 'timetables', data: { placeholder: true, created: new Date().toISOString() } },
+                    { name: 'books', data: { placeholder: true, created: new Date().toISOString() } },
+                    { name: 'homework', data: { placeholder: true, created: new Date().toISOString() } },
+                    { name: 'busRoutes', data: { placeholder: true, created: new Date().toISOString() } },
+                    { name: 'boarding', data: { placeholder: true, created: new Date().toISOString() } }
+                ];
+
+                let created = 0;
+                for (let col of collections) {
+                    try {
+                        const docRef = db.collection(col.name).doc('_placeholder_');
+                        await docRef.set(col.data);
+                        console.log(`✅ Created collection: ${col.name}`);
+                        created++;
+                    } catch (e) {
+                        if (e.code === 'permission-denied') {
+                            console.warn(`⛔ Permission denied for ${col.name}. You may need to set security rules.`);
+                        } else {
+                            console.warn(`⚠️ Error creating ${col.name}:`, e.message);
+                        }
+                    }
+                }
+
+                // Also create boarding subcollections
+                const boardingSubs = ['dormitories', 'meals', 'health', 'gatepasses'];
+                for (let sub of boardingSubs) {
+                    try {
+                        const docRef = db.collection('boarding').doc(sub).collection('_placeholder_').doc('_init_');
+                        await docRef.set({ placeholder: true, created: new Date().toISOString() });
+                        console.log(`✅ Created boarding subcollection: ${sub}`);
+                        created++;
+                    } catch (e) {
+                        if (e.code === 'permission-denied') {
+                            console.warn(`⛔ Permission denied for boarding/${sub}`);
+                        } else {
+                            console.warn(`⚠️ Error creating boarding/${sub}:`, e.message);
+                        }
+                    }
+                }
+
+                showToast(`✅ Created ${created} collections/placeholder documents. Check console for details.`, false);
+                await checkCollections();
+            } catch (e) {
+                console.error('Error creating collections:', e);
+                showToast('❌ Some collections could not be created: ' + e.message, true);
+            }
+        }
+
+        // ================================================================
+        //  CHECK COLLECTIONS STATUS (Step 4 - graceful handling)
+        // ================================================================
+        async function checkCollections() {
+            if (!currentUser) {
+                showToast('Please log in first.', true);
+                return;
+            }
+            const container = document.getElementById('collectionStatusContainer');
+            if (!container) return;
+
+            const collections = ['parents', 'staff', 'attendance', 'fees', 'exams', 'timetables', 'books', 'homework',
+                'busRoutes', 'boarding'
+            ];
+            const boardingSubs = ['dormitories', 'meals', 'health', 'gatepasses'];
+
+            let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;">';
+
+            for (let col of collections) {
+                try {
+                    const snap = await db.collection(col).limit(1).get();
+                    const exists = !snap.empty;
+                    const status = exists ? 'created' : 'pending';
+                    const label = exists ? '✅ Exists' : '📁 Empty (ok)';
+                    html += `<div class="collection-status">
+                        <span class="status-dot ${status}"></span>
+                        <strong>${col}</strong>
+                        <span style="margin-left:auto;font-size:11px;color:#64748b;">${label}</span>
+                    </div>`;
+                } catch (e) {
+                    const isPerm = isPermissionError(e);
+                    const status = isPerm ? 'error' : 'pending';
+                    const label = isPerm ? '⛔ Permission Denied' : '⚠️ Error';
+                    html += `<div class="collection-status" style="background:#fef2f2;">
+                        <span class="status-dot ${status}"></span>
+                        <strong>${col}</strong>
+                        <span style="margin-left:auto;font-size:11px;color:#dc2626;">${label}</span>
+                    </div>`;
+                }
+            }
+
+            // Boarding subcollections
+            for (let sub of boardingSubs) {
+                try {
+                    const snap = await db.collection('boarding').doc(sub).collection('_placeholder_').limit(1).get();
+                    const exists = !snap.empty;
+                    const status = exists ? 'created' : 'pending';
+                    const label = exists ? '✅ Exists' : '📁 Empty';
+                    html += `<div class="collection-status">
+                        <span class="status-dot ${status}"></span>
+                        <strong>boarding/${sub}</strong>
+                        <span style="margin-left:auto;font-size:11px;color:#64748b;">${label}</span>
+                    </div>`;
+                } catch (e) {
+                    const isPerm = isPermissionError(e);
+                    const status = isPerm ? 'error' : 'pending';
+                    const label = isPerm ? '⛔ Permission Denied' : '⚠️ Error';
+                    html += `<div class="collection-status" style="background:#fef2f2;">
+                        <span class="status-dot ${status}"></span>
+                        <strong>boarding/${sub}</strong>
+                        <span style="margin-left:auto;font-size:11px;color:#dc2626;">${label}</span>
+                    </div>`;
+                }
+            }
+
+            html += '</div>';
+            html +=
+                `<div style="margin-top:10px;font-size:12px;color:#64748b;">💡 Tip: If you see "Permission Denied", you need to set up Firestore security rules (see console). Click "Create Missing" to create placeholder documents.</div>`;
+            container.innerHTML = html;
+        }
+
+        // ================================================================
+        //  FIREBASE CRUD with Error Handling, Caching & Collection Checks
+        // ================================================================
         async function saveToFirebase() {
             if (!currentUser) { console.warn('No user logged in – skipping save.'); return; }
             try {
@@ -2390,9 +2561,10 @@
             // If we already have data loaded and we're just refreshing, use cache first
             if (dataLoaded && students.length > 0) {
                 console.log('📦 Using cached data while fetching fresh...');
-                // Still attempt to refresh in background
                 try {
                     await refreshFirebaseData();
+                    // Check collections status in background
+                    setTimeout(() => checkCollections(), 1000);
                     return true;
                 } catch (e) {
                     console.warn('Background refresh failed, using cache:', e);
@@ -2401,7 +2573,12 @@
             }
 
             // First attempt with retry
-            return await loadFirebaseDataWithRetry();
+            const result = await loadFirebaseDataWithRetry();
+            if (result) {
+                // Check collections status after successful load
+                setTimeout(() => checkCollections(), 1500);
+            }
+            return result;
         }
 
         async function loadFirebaseDataWithRetry() {
@@ -2417,8 +2594,8 @@
                     return false;
                 } catch (error) {
                     attempts++;
-                    const isPermError = isPermissionError(error);
-                    if (isPermError) {
+                    const isPerm = isPermissionError(error);
+                    if (isPerm) {
                         console.error('⛔ Permission error loading data:', error);
                         showToast('⛔ You don\'t have permission to view this data. Please contact the school administrator.',
                             true);
@@ -2439,6 +2616,29 @@
         }
 
         async function loadFirebaseDataOnce() {
+            // Try to load each collection individually for graceful handling
+            const collectionNames = ['students', 'teachers', 'parents', 'staff', 'attendance', 'fees', 'exams',
+                'timetables', 'books', 'homework', 'busRoutes', 'boarding'
+            ];
+
+            for (let col of collectionNames) {
+                try {
+                    const snapshot = await db.collection(col).limit(1).get();
+                    if (snapshot.empty) {
+                        console.log(`📁 ${col} exists (empty)`);
+                    } else {
+                        console.log(`📁 ${col} exists with data`);
+                    }
+                } catch (e) {
+                    if (isPermissionError(e)) {
+                        console.warn(`⛔ Permission denied for ${col} - you may need to set security rules`);
+                    } else {
+                        console.warn(`⚠️ Error accessing ${col}:`, e.message);
+                    }
+                }
+            }
+
+            // Now load the main school document
             const doc = await db.collection('schools').doc(currentUser.uid).get();
             if (!doc.exists) {
                 await saveToFirebase();
@@ -2660,6 +2860,8 @@
                 document.getElementById('authSection').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
                 refreshAllUI();
+                // Check collections after login
+                setTimeout(() => checkCollections(), 2000);
                 showToast(`Welcome ${currentUserRole}!`, false);
             } catch (error) { alert('Login failed: ' + error.message); }
         }
@@ -2718,6 +2920,7 @@
                 document.getElementById('authSection').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
                 refreshAllUI();
+                setTimeout(() => checkCollections(), 2000);
                 showToast('School registered successfully!', false);
             } catch (error) { alert('Registration failed: ' + error.message); }
         }
@@ -2773,6 +2976,7 @@
                 document.getElementById('authSection').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
                 refreshAllUI();
+                setTimeout(() => checkCollections(), 2000);
                 showToast('3-day demo started!', false);
             } catch (error) { alert('Demo error: ' + error.message); }
         }
@@ -6710,6 +6914,10 @@
         window.renderFeeStructureSettings = renderFeeStructureSettings;
         window.saveFeeStructureSettings = saveFeeStructureSettings;
 
+        // Collection management
+        window.createMissingCollections = createMissingCollections;
+        window.checkCollections = checkCollections;
+
         // ==================== AUTO LOGIN CHECK ====================
         auth.onAuthStateChanged(async (user) => {
             if (user) {
@@ -6719,6 +6927,8 @@
                 document.getElementById('mainApp').style.display = 'block';
                 refreshAllUI();
                 updateNotificationBadge();
+                // Check collections after login
+                setTimeout(() => checkCollections(), 2000);
                 showToast('Welcome back!', false);
             }
         });
@@ -6734,6 +6944,8 @@
         console.log('🔄 Retry mechanism enabled with 3 attempts, 5s delay');
         console.log('📦 Caching enabled – data persists between sessions');
         console.log('⛔ Permission errors will show user-friendly messages');
+        console.log('📁 Use window.createMissingCollections() to create all required collections');
+        console.log('📊 Use window.checkCollections() to verify collection status');
     </script>
 </body>
-</html>
+    </html>
