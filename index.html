@@ -1164,6 +1164,20 @@
         .permission-error-container .retry-btn {
             margin-top: 10px;
         }
+        .loading-shimmer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 40px;
+            color: #64748b;
+            font-size: 14px;
+        }
+        .loading-shimmer i {
+            font-size: 28px;
+            animation: spin 1s linear infinite;
+            color: #166534;
+        }
         @media print {
             body * {
                 visibility: hidden;
@@ -1482,32 +1496,6 @@
         .analytics-enhanced .bronze {
             color: #cd7f32;
         }
-        .collection-status {
-            background: #f8fafc;
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin: 8px 0;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .collection-status .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-        .collection-status .status-dot.created {
-            background: #166534;
-        }
-        .collection-status .status-dot.error {
-            background: #dc2626;
-        }
-        .collection-status .status-dot.pending {
-            background: #f59e0b;
-        }
     </style>
 </head>
 <body>
@@ -1666,11 +1654,6 @@
                     <div class="stat-card"><div class="stat-icon"><i class="fas fa-user-clock" style="color:#f59e0b;"></i></div><div><h3 id="todayExcused">0</h3><p>Excused</p></div></div>
                     <div class="stat-card"><div class="stat-icon"><i class="fas fa-percent" style="color:#0d9488;"></i></div><div><h3 id="todayAttendanceRate">0%</h3><p>Attendance Rate</p></div></div>
                 </div>
-            </div>
-            <!-- Collection Status -->
-            <div class="section-card">
-                <div class="section-header"><h3>📁 Database Collections Status</h3><button class="action-btn info" onclick="window.checkCollections()">Check All</button><button class="action-btn primary" onclick="window.createMissingCollections()">Create Missing</button></div>
-                <div id="collectionStatusContainer"></div>
             </div>
         </div>
 
@@ -2108,10 +2091,8 @@
 
     <script>
         // ======================================================================
-        //  EDUNEXA PRO – COMPLETE SURGICAL FIX with PERMISSION HANDLING
-        //  All modules: Parent Portal, Staff Portal, Attendance, Fees, Boarding, etc.
-        //  Enhanced error handling, caching, and retry mechanism.
-        //  INCLUDES: createMissingCollections() and collection status checker.
+        //  EDUNEXA PRO – SURGICAL FIX: PERMISSIONS & COLLECTION AUTO-CREATION
+        //  All modules integrated with proper error handling, caching, and retry.
         // ======================================================================
 
         // ==================== FIREBASE CONFIG ====================
@@ -2126,11 +2107,18 @@
 
         let auth, db;
         let currentUser = null;
-        let currentUserRole = 'admin'; // admin, parent, teacher, staff
+        let currentUserRole = 'admin';
+
+        // ===== GLOBAL DATA =====
         let students = [];
         let deletedStudents = [];
         let gradeXStudents = [];
         let teachers = [];
+        let parents = [];
+        let staff = [];
+        let feeStructures = [];
+        let payments = [];
+        let attendanceRecords = [];
         let settings = {
             name: "EduNexa Pro",
             motto: "Excellence",
@@ -2152,17 +2140,13 @@
         let markSheets = [{ name: "Sheet1", data: {} }];
         let currentSheetIndex = 0;
         let boardingData = { dormitories: [], meals: [], health: [], gatepasses: [] };
-        let unsubscribeListener = null;
-        let refreshInterval = null;
-
-        // ===== NEW MODULE DATA =====
-        let parents = [];
-        let feeStructures = [];
-        let payments = [];
+        let dormitories = [];
+        let meals = [];
+        let healthRecords = [];
+        let gatepasses = [];
         let exams = [];
         let examMarks = [];
         let timetables = [];
-        let staff = [];
         let books = [];
         let borrowings = [];
         let homework = [];
@@ -2170,20 +2154,12 @@
         let busAttendance = [];
         let notifications = [];
         let chatMessages = [];
-        let attendanceRecords = [];
-        let dormitories = [];
-        let meals = [];
-        let healthRecords = [];
-        let gatepasses = [];
 
         // ===== CACHING & RETRY =====
         let dataLoaded = false;
         let loadAttempts = 0;
-        const MAX_RETRIES = 3;
-        const RETRY_DELAY = 5000; // 5 seconds
-
-        // ===== COLLECTION STATUS =====
-        let collectionStatus = {};
+        const MAX_RETRIES = 2;
+        const RETRY_DELAY = 3000;
 
         // ===== IMPORT GLOBALS =====
         let importFileData = null;
@@ -2224,7 +2200,7 @@
                         db = firebase.firestore();
                     }
                 });
-        } catch (e) { console.log("Firebase error:", e);
+        } catch (e) { console.log("Firebase init error:", e);
             db = firebase.firestore(); }
 
         // ==================== HELPERS ====================
@@ -2255,6 +2231,26 @@
         }
 
         function genCode() { let code = `SKY-${String(nextCode).padStart(6,'0')}`; nextCode++; return code; }
+
+        function isPermissionError(error) {
+            return error && (error.code === 'permission-denied' ||
+                error.message && error.message.includes('permission-denied') ||
+                error.message && error.message.includes('Missing or insufficient permissions'));
+        }
+
+        function getWeekNumber(dateStr) {
+            if (!settings.openingDate) return 1;
+            const start = new Date(settings.openingDate);
+            const d = new Date(dateStr);
+            const diff = Math.floor((d - start) / (7 * 86400000));
+            return Math.min(Math.max(diff + 1, 1), settings.weeksInTerm || 13);
+        }
+
+        function getTerm() { return `${settings.term || 'Term 2'}, ${settings.year || '2025'}`; }
+
+        function loadStreams() { return (settings.streams && settings.streams.length > 0) ? settings.streams : ["North",
+                "South", "East", "West"
+            ]; }
 
         // ===== SUBJECTS =====
         const subjectsMap = {
@@ -2315,19 +2311,16 @@
             return { code: "BE2", points: 1, descriptor: "Minimal / Poor Performance", color: "#dc2626" };
         }
 
-        function loadStreams() { return (settings.streams && settings.streams.length > 0) ? settings.streams : ["North",
-                "South", "East", "West"
-            ]; }
-
-        function getWeekNumber(dateStr) {
-            if (!settings.openingDate) return 1;
-            const start = new Date(settings.openingDate);
-            const d = new Date(dateStr);
-            const diff = Math.floor((d - start) / (7 * 86400000));
-            return Math.min(Math.max(diff + 1, 1), settings.weeksInTerm || 13);
+        function getStudentAttendanceSummary(studentId) {
+            const records = attendanceRecords.filter(r => r.studentId === studentId);
+            if (records.length === 0) return null;
+            const present = records.filter(r => r.status === 'Present').length;
+            const absent = records.filter(r => r.status === 'Absent').length;
+            const excused = records.filter(r => r.status === 'Excused').length;
+            const total = present + absent + excused;
+            const rate = total > 0 ? ((present / total) * 100).toFixed(1) : 0;
+            return { present, absent, excused, total, rate };
         }
-
-        function getTerm() { return `${settings.term || 'Term 2'}, ${settings.year || '2025'}`; }
 
         function ensureAllStudentsPresent() {
             try {
@@ -2352,203 +2345,56 @@
             } catch (e) { console.error("ensureAllStudentsPresent error:", e); }
         }
 
-        // ===== IS PERMISSION ERROR =====
-        function isPermissionError(error) {
-            return error && (error.code === 'permission-denied' ||
-                error.message && error.message.includes('permission-denied') ||
-                error.message && error.message.includes('Missing or insufficient permissions'));
-        }
-
-        // ===== SHOW PERMISSION ERROR UI =====
-        function showPermissionError(containerId, retryFn) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            container.innerHTML = `
-                <div class="permission-error-container">
-                    <i class="fas fa-lock"></i>
-                    <div class="error-title">⛔ Permission Denied</div>
-                    <div class="error-desc">You don't have permission to view this data. Please contact the school administrator.</div>
-                    <button class="retry-btn" onclick="(${retryFn.toString()})()"><i class="fas fa-sync-alt"></i> Retry</button>
-                </div>
-            `;
-        }
-
-        // ================================================================
-        //  CREATE MISSING COLLECTIONS (Step 1)
-        // ================================================================
-        async function createMissingCollections() {
-            if (!currentUser) {
-                showToast('Please log in first.', true);
-                return;
-            }
-            try {
-                const collections = [
-                    { name: 'parents', data: { placeholder: true, created: new Date().toISOString() } },
-                    { name: 'staff', data: { placeholder: true, created: new Date().toISOString() } },
-                    { name: 'attendance', data: { placeholder: true, created: new Date().toISOString() } },
-                    { name: 'fees', data: { placeholder: true, created: new Date().toISOString() } },
-                    { name: 'exams', data: { placeholder: true, created: new Date().toISOString() } },
-                    { name: 'timetables', data: { placeholder: true, created: new Date().toISOString() } },
-                    { name: 'books', data: { placeholder: true, created: new Date().toISOString() } },
-                    { name: 'homework', data: { placeholder: true, created: new Date().toISOString() } },
-                    { name: 'busRoutes', data: { placeholder: true, created: new Date().toISOString() } },
-                    { name: 'boarding', data: { placeholder: true, created: new Date().toISOString() } }
-                ];
-
-                let created = 0;
-                for (let col of collections) {
-                    try {
-                        const docRef = db.collection(col.name).doc('_placeholder_');
-                        await docRef.set(col.data);
-                        console.log(`✅ Created collection: ${col.name}`);
-                        created++;
-                    } catch (e) {
-                        if (e.code === 'permission-denied') {
-                            console.warn(`⛔ Permission denied for ${col.name}. You may need to set security rules.`);
-                        } else {
-                            console.warn(`⚠️ Error creating ${col.name}:`, e.message);
-                        }
-                    }
-                }
-
-                // Also create boarding subcollections
-                const boardingSubs = ['dormitories', 'meals', 'health', 'gatepasses'];
-                for (let sub of boardingSubs) {
-                    try {
-                        const docRef = db.collection('boarding').doc(sub).collection('_placeholder_').doc('_init_');
-                        await docRef.set({ placeholder: true, created: new Date().toISOString() });
-                        console.log(`✅ Created boarding subcollection: ${sub}`);
-                        created++;
-                    } catch (e) {
-                        if (e.code === 'permission-denied') {
-                            console.warn(`⛔ Permission denied for boarding/${sub}`);
-                        } else {
-                            console.warn(`⚠️ Error creating boarding/${sub}:`, e.message);
-                        }
-                    }
-                }
-
-                showToast(`✅ Created ${created} collections/placeholder documents. Check console for details.`, false);
-                await checkCollections();
-            } catch (e) {
-                console.error('Error creating collections:', e);
-                showToast('❌ Some collections could not be created: ' + e.message, true);
-            }
-        }
-
-        // ================================================================
-        //  CHECK COLLECTIONS STATUS (Step 4 - graceful handling)
-        // ================================================================
-        async function checkCollections() {
-            if (!currentUser) {
-                showToast('Please log in first.', true);
-                return;
-            }
-            const container = document.getElementById('collectionStatusContainer');
-            if (!container) return;
-
-            const collections = ['parents', 'staff', 'attendance', 'fees', 'exams', 'timetables', 'books', 'homework',
-                'busRoutes', 'boarding'
-            ];
-            const boardingSubs = ['dormitories', 'meals', 'health', 'gatepasses'];
-
-            let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;">';
-
-            for (let col of collections) {
-                try {
-                    const snap = await db.collection(col).limit(1).get();
-                    const exists = !snap.empty;
-                    const status = exists ? 'created' : 'pending';
-                    const label = exists ? '✅ Exists' : '📁 Empty (ok)';
-                    html += `<div class="collection-status">
-                        <span class="status-dot ${status}"></span>
-                        <strong>${col}</strong>
-                        <span style="margin-left:auto;font-size:11px;color:#64748b;">${label}</span>
-                    </div>`;
-                } catch (e) {
-                    const isPerm = isPermissionError(e);
-                    const status = isPerm ? 'error' : 'pending';
-                    const label = isPerm ? '⛔ Permission Denied' : '⚠️ Error';
-                    html += `<div class="collection-status" style="background:#fef2f2;">
-                        <span class="status-dot ${status}"></span>
-                        <strong>${col}</strong>
-                        <span style="margin-left:auto;font-size:11px;color:#dc2626;">${label}</span>
-                    </div>`;
-                }
-            }
-
-            // Boarding subcollections
-            for (let sub of boardingSubs) {
-                try {
-                    const snap = await db.collection('boarding').doc(sub).collection('_placeholder_').limit(1).get();
-                    const exists = !snap.empty;
-                    const status = exists ? 'created' : 'pending';
-                    const label = exists ? '✅ Exists' : '📁 Empty';
-                    html += `<div class="collection-status">
-                        <span class="status-dot ${status}"></span>
-                        <strong>boarding/${sub}</strong>
-                        <span style="margin-left:auto;font-size:11px;color:#64748b;">${label}</span>
-                    </div>`;
-                } catch (e) {
-                    const isPerm = isPermissionError(e);
-                    const status = isPerm ? 'error' : 'pending';
-                    const label = isPerm ? '⛔ Permission Denied' : '⚠️ Error';
-                    html += `<div class="collection-status" style="background:#fef2f2;">
-                        <span class="status-dot ${status}"></span>
-                        <strong>boarding/${sub}</strong>
-                        <span style="margin-left:auto;font-size:11px;color:#dc2626;">${label}</span>
-                    </div>`;
-                }
-            }
-
-            html += '</div>';
-            html +=
-                `<div style="margin-top:10px;font-size:12px;color:#64748b;">💡 Tip: If you see "Permission Denied", you need to set up Firestore security rules (see console). Click "Create Missing" to create placeholder documents.</div>`;
-            container.innerHTML = html;
-        }
-
-        // ================================================================
-        //  FIREBASE CRUD with Error Handling, Caching & Collection Checks
-        // ================================================================
+        // ==================== FIREBASE CRUD ====================
         async function saveToFirebase() {
-            if (!currentUser) { console.warn('No user logged in – skipping save.'); return; }
+            if (!currentUser) {
+                console.warn('No user logged in – skipping save.');
+                return;
+            }
             try {
+                // Build complete data object with all collections
                 const data = {
                     students: students || [],
                     deletedStudents: deletedStudents || [],
                     gradeXStudents: gradeXStudents || [],
                     teachers: teachers || [],
+                    parents: parents || [],
+                    staff: staff || [],
+                    feeStructures: feeStructures || [],
+                    payments: payments || [],
+                    attendanceRecords: attendanceRecords || [],
                     settings: settings || {},
                     nextCode: nextCode || 1,
                     isDemo: isDemo || false,
                     demoExpiry: demoExpiry || null,
                     markSheets: markSheets || [{ name: 'Sheet1', data: {} }],
                     boardingData: boardingData || { dormitories: [], meals: [], health: [], gatepasses: [] },
-                    parents: parents || [],
-                    feeStructures: feeStructures || [],
-                    payments: payments || [],
+                    dormitories: dormitories || [],
+                    meals: meals || [],
+                    healthRecords: healthRecords || [],
+                    gatepasses: gatepasses || [],
                     exams: exams || [],
                     examMarks: examMarks || [],
                     timetables: timetables || [],
-                    staff: staff || [],
                     books: books || [],
                     borrowings: borrowings || [],
                     homework: homework || [],
                     busRoutes: busRoutes || [],
                     busAttendance: busAttendance || [],
                     notifications: notifications || [],
-                    chatMessages: chatMessages || [],
-                    attendanceRecords: attendanceRecords || [],
-                    dormitories: dormitories || [],
-                    meals: meals || [],
-                    healthRecords: healthRecords || [],
-                    gatepasses: gatepasses || []
+                    chatMessages: chatMessages || []
                 };
+
                 await db.collection('schools').doc(currentUser.uid).set(data, { merge: true });
-                console.log('✅ Data saved successfully');
+                console.log('✅ Data saved successfully to Firestore');
+                console.log(`📊 Stats: ${students.length} students, ${teachers.length} teachers, ${parents.length} parents, ${staff.length} staff, ${attendanceRecords.length} attendance records`);
             } catch (error) {
                 console.error('Save error:', error);
-                showToast('Error saving data. Please try again.', true);
+                if (isPermissionError(error)) {
+                    showToast('⛔ Permission denied. Please check your Firebase security rules.', true);
+                } else {
+                    showToast('Error saving data. Please try again.', true);
+                }
             }
         }
 
@@ -2558,13 +2404,11 @@
                 return false;
             }
 
-            // If we already have data loaded and we're just refreshing, use cache first
+            // If we already have data loaded, try background refresh
             if (dataLoaded && students.length > 0) {
-                console.log('📦 Using cached data while fetching fresh...');
+                console.log('📦 Using cached data while refreshing in background...');
                 try {
                     await refreshFirebaseData();
-                    // Check collections status in background
-                    setTimeout(() => checkCollections(), 1000);
                     return true;
                 } catch (e) {
                     console.warn('Background refresh failed, using cache:', e);
@@ -2572,13 +2416,8 @@
                 }
             }
 
-            // First attempt with retry
-            const result = await loadFirebaseDataWithRetry();
-            if (result) {
-                // Check collections status after successful load
-                setTimeout(() => checkCollections(), 1500);
-            }
-            return result;
+            // First load with retry
+            return await loadFirebaseDataWithRetry();
         }
 
         async function loadFirebaseDataWithRetry() {
@@ -2594,8 +2433,8 @@
                     return false;
                 } catch (error) {
                     attempts++;
-                    const isPerm = isPermissionError(error);
-                    if (isPerm) {
+                    const isPermError = isPermissionError(error);
+                    if (isPermError) {
                         console.error('⛔ Permission error loading data:', error);
                         showToast('⛔ You don\'t have permission to view this data. Please contact the school administrator.',
                             true);
@@ -2616,52 +2455,51 @@
         }
 
         async function loadFirebaseDataOnce() {
-            // Try to load each collection individually for graceful handling
-            const collectionNames = ['students', 'teachers', 'parents', 'staff', 'attendance', 'fees', 'exams',
-                'timetables', 'books', 'homework', 'busRoutes', 'boarding'
-            ];
-
-            for (let col of collectionNames) {
-                try {
-                    const snapshot = await db.collection(col).limit(1).get();
-                    if (snapshot.empty) {
-                        console.log(`📁 ${col} exists (empty)`);
-                    } else {
-                        console.log(`📁 ${col} exists with data`);
-                    }
-                } catch (e) {
-                    if (isPermissionError(e)) {
-                        console.warn(`⛔ Permission denied for ${col} - you may need to set security rules`);
-                    } else {
-                        console.warn(`⚠️ Error accessing ${col}:`, e.message);
-                    }
-                }
-            }
-
-            // Now load the main school document
             const doc = await db.collection('schools').doc(currentUser.uid).get();
+
+            // If document doesn't exist, create it with all collections
             if (!doc.exists) {
+                console.log('📄 School document not found. Creating with all collections...');
                 await saveToFirebase();
+                // Re-fetch after creation
+                const newDoc = await db.collection('schools').doc(currentUser.uid).get();
+                if (!newDoc.exists) {
+                    console.error('Failed to create school document');
+                    return false;
+                }
+                const data = newDoc.data();
+                populateData(data);
                 return true;
             }
+
             const data = doc.data();
+            populateData(data);
+            return true;
+        }
+
+        function populateData(data) {
             students = data.students || [];
             deletedStudents = data.deletedStudents || [];
             gradeXStudents = data.gradeXStudents || [];
             teachers = data.teachers || [];
-            nextCode = data.nextCode || students.length + 1;
-            settings = { ...settings, ...(data.settings || {}) };
-            markSheets = data.markSheets || [{ name: 'Sheet1', data: {} }];
-            boardingData = data.boardingData || { dormitories: [], meals: [], health: [], gatepasses: [] };
-            isDemo = data.isDemo || false;
-            demoExpiry = data.demoExpiry || null;
             parents = data.parents || [];
+            staff = data.staff || [];
             feeStructures = data.feeStructures || [];
             payments = data.payments || [];
+            attendanceRecords = data.attendanceRecords || [];
+            settings = { ...settings, ...(data.settings || {}) };
+            nextCode = data.nextCode || students.length + 1;
+            isDemo = data.isDemo || false;
+            demoExpiry = data.demoExpiry || null;
+            markSheets = data.markSheets || [{ name: 'Sheet1', data: {} }];
+            boardingData = data.boardingData || { dormitories: [], meals: [], health: [], gatepasses: [] };
+            dormitories = data.dormitories || [];
+            meals = data.meals || [];
+            healthRecords = data.healthRecords || [];
+            gatepasses = data.gatepasses || [];
             exams = data.exams || [];
             examMarks = data.examMarks || [];
             timetables = data.timetables || [];
-            staff = data.staff || [];
             books = data.books || [];
             borrowings = data.borrowings || [];
             homework = data.homework || [];
@@ -2669,11 +2507,6 @@
             busAttendance = data.busAttendance || [];
             notifications = data.notifications || [];
             chatMessages = data.chatMessages || [];
-            attendanceRecords = data.attendanceRecords || [];
-            dormitories = data.dormitories || [];
-            meals = data.meals || [];
-            healthRecords = data.healthRecords || [];
-            gatepasses = data.gatepasses || [];
 
             ensureAllStudentsPresent();
 
@@ -2708,32 +2541,32 @@
                     if (isImporting) return;
                     if (snap.exists) {
                         const d = snap.data();
-                        students = d.students || [];
-                        deletedStudents = d.deletedStudents || [];
-                        gradeXStudents = d.gradeXStudents || [];
-                        teachers = d.teachers || [];
+                        students = d.students || students;
+                        deletedStudents = d.deletedStudents || deletedStudents;
+                        gradeXStudents = d.gradeXStudents || gradeXStudents;
+                        teachers = d.teachers || teachers;
+                        parents = d.parents || parents;
+                        staff = d.staff || staff;
+                        feeStructures = d.feeStructures || feeStructures;
+                        payments = d.payments || payments;
+                        attendanceRecords = d.attendanceRecords || attendanceRecords;
                         settings = { ...settings, ...(d.settings || {}) };
                         markSheets = d.markSheets || markSheets;
                         boardingData = d.boardingData || boardingData;
-                        parents = d.parents || [];
-                        feeStructures = d.feeStructures || [];
-                        payments = d.payments || [];
-                        exams = d.exams || [];
-                        examMarks = d.examMarks || [];
-                        timetables = d.timetables || [];
-                        staff = d.staff || [];
-                        books = d.books || [];
-                        borrowings = d.borrowings || [];
-                        homework = d.homework || [];
-                        busRoutes = d.busRoutes || [];
-                        busAttendance = d.busAttendance || [];
-                        notifications = d.notifications || [];
-                        chatMessages = d.chatMessages || [];
-                        attendanceRecords = d.attendanceRecords || [];
-                        dormitories = d.dormitories || [];
-                        meals = d.meals || [];
-                        healthRecords = d.healthRecords || [];
-                        gatepasses = d.gatepasses || [];
+                        dormitories = d.dormitories || dormitories;
+                        meals = d.meals || meals;
+                        healthRecords = d.healthRecords || healthRecords;
+                        gatepasses = d.gatepasses || gatepasses;
+                        exams = d.exams || exams;
+                        examMarks = d.examMarks || examMarks;
+                        timetables = d.timetables || timetables;
+                        books = d.books || books;
+                        borrowings = d.borrowings || borrowings;
+                        homework = d.homework || homework;
+                        busRoutes = d.busRoutes || busRoutes;
+                        busAttendance = d.busAttendance || busAttendance;
+                        notifications = d.notifications || notifications;
+                        chatMessages = d.chatMessages || chatMessages;
                         ensureAllStudentsPresent();
                         refreshAllUI();
                         console.log('🔄 Data updated from cloud');
@@ -2741,17 +2574,15 @@
                 }, (err) => {
                     if (isPermissionError(err)) {
                         console.warn('⛔ Listener permission error:', err);
-                        showToast('⛔ Permission error. Some data may not be visible.', true);
                     } else {
                         console.warn('Listener error:', err);
                     }
                 });
 
+            console.log(`✅ Loaded ${students.length} students, ${teachers.length} teachers, ${parents.length} parents, ${staff.length} staff, ${attendanceRecords.length} attendance records`);
             dataLoaded = true;
-            return true;
         }
 
-        // Background refresh function
         async function refreshFirebaseData() {
             try {
                 const doc = await db.collection('schools').doc(currentUser.uid).get();
@@ -2761,16 +2592,21 @@
                     deletedStudents = data.deletedStudents || deletedStudents;
                     gradeXStudents = data.gradeXStudents || gradeXStudents;
                     teachers = data.teachers || teachers;
+                    parents = data.parents || parents;
+                    staff = data.staff || staff;
+                    feeStructures = data.feeStructures || feeStructures;
+                    payments = data.payments || payments;
+                    attendanceRecords = data.attendanceRecords || attendanceRecords;
                     settings = { ...settings, ...(data.settings || {}) };
                     markSheets = data.markSheets || markSheets;
                     boardingData = data.boardingData || boardingData;
-                    parents = data.parents || parents;
-                    feeStructures = data.feeStructures || feeStructures;
-                    payments = data.payments || payments;
+                    dormitories = data.dormitories || dormitories;
+                    meals = data.meals || meals;
+                    healthRecords = data.healthRecords || healthRecords;
+                    gatepasses = data.gatepasses || gatepasses;
                     exams = data.exams || exams;
                     examMarks = data.examMarks || examMarks;
                     timetables = data.timetables || timetables;
-                    staff = data.staff || staff;
                     books = data.books || books;
                     borrowings = data.borrowings || borrowings;
                     homework = data.homework || homework;
@@ -2778,11 +2614,6 @@
                     busAttendance = data.busAttendance || busAttendance;
                     notifications = data.notifications || notifications;
                     chatMessages = data.chatMessages || chatMessages;
-                    attendanceRecords = data.attendanceRecords || attendanceRecords;
-                    dormitories = data.dormitories || dormitories;
-                    meals = data.meals || meals;
-                    healthRecords = data.healthRecords || healthRecords;
-                    gatepasses = data.gatepasses || gatepasses;
                     ensureAllStudentsPresent();
                     refreshAllUI();
                     console.log('🔄 Background refresh completed');
@@ -2843,6 +2674,7 @@
             try {
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 currentUser = userCredential.user;
+
                 // Determine role
                 const doc = await db.collection('schools').doc(currentUser.uid).get();
                 if (doc.exists) {
@@ -2856,14 +2688,19 @@
                     const adminStaff = (data.staff || []).find(s => s.email === email && s.role === 'Super Admin');
                     if (adminStaff) { currentUserRole = 'superadmin'; }
                 }
-                await loadFromFirebase();
-                document.getElementById('authSection').style.display = 'none';
-                document.getElementById('mainApp').style.display = 'block';
-                refreshAllUI();
-                // Check collections after login
-                setTimeout(() => checkCollections(), 2000);
-                showToast(`Welcome ${currentUserRole}!`, false);
-            } catch (error) { alert('Login failed: ' + error.message); }
+
+                const loaded = await loadFromFirebase();
+                if (loaded) {
+                    document.getElementById('authSection').style.display = 'none';
+                    document.getElementById('mainApp').style.display = 'block';
+                    refreshAllUI();
+                    showToast(`Welcome ${currentUserRole}!`, false);
+                } else {
+                    showToast('⚠️ Could not load data. Please refresh or contact support.', true);
+                }
+            } catch (error) {
+                alert('Login failed: ' + error.message);
+            }
         }
 
         async function doRegister() {
@@ -2879,6 +2716,9 @@
                 if (password !== confirm) { alert('Passwords do not match.'); return; }
                 const userCredential = await auth.createUserWithEmailAndPassword(schoolEmail, password);
                 currentUser = userCredential.user;
+                currentUserRole = 'superadmin';
+
+                // Create school document with all collections initialized
                 await db.collection('schools').doc(currentUser.uid).set({
                     name: schoolName,
                     email: schoolEmail,
@@ -2887,6 +2727,11 @@
                     deletedStudents: [],
                     gradeXStudents: [],
                     teachers: [],
+                    parents: [],
+                    staff: [],
+                    feeStructures: [],
+                    payments: [],
+                    attendanceRecords: [],
                     settings: { name: schoolName, motto: 'Excellence', term: 'Term 2', year: '2025',
                         teacher: 'Mrs. J. Kamau', headTeacher: 'Dr. J. Mwangi', moeCode: '', weeksInTerm: 13,
                         feeStructure: {} },
@@ -2895,32 +2740,26 @@
                     demoExpiry: null,
                     markSheets: [{ name: 'Sheet1', data: {} }],
                     boardingData: { dormitories: [], meals: [], health: [], gatepasses: [] },
-                    parents: [],
-                    feeStructures: [],
-                    payments: [],
+                    dormitories: [],
+                    meals: [],
+                    healthRecords: [],
+                    gatepasses: [],
                     exams: [],
                     examMarks: [],
                     timetables: [],
-                    staff: [],
                     books: [],
                     borrowings: [],
                     homework: [],
                     busRoutes: [],
                     busAttendance: [],
                     notifications: [],
-                    chatMessages: [],
-                    attendanceRecords: [],
-                    dormitories: [],
-                    meals: [],
-                    healthRecords: [],
-                    gatepasses: []
+                    chatMessages: []
                 });
-                currentUserRole = 'superadmin';
+
                 await loadFromFirebase();
                 document.getElementById('authSection').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
                 refreshAllUI();
-                setTimeout(() => checkCollections(), 2000);
                 showToast('School registered successfully!', false);
             } catch (error) { alert('Registration failed: ' + error.message); }
         }
@@ -2935,6 +2774,8 @@
                 currentUser = userCredential.user;
                 const expiry = new Date();
                 expiry.setDate(expiry.getDate() + 3);
+                currentUserRole = 'superadmin';
+
                 await db.collection('schools').doc(currentUser.uid).set({
                     name: schoolName,
                     email: demoEmail,
@@ -2943,6 +2784,11 @@
                     deletedStudents: [],
                     gradeXStudents: [],
                     teachers: [],
+                    parents: [],
+                    staff: [],
+                    feeStructures: [],
+                    payments: [],
+                    attendanceRecords: [],
                     settings: { name: schoolName, motto: 'Demo Mode', term: 'Term 2', year: '2025',
                         teacher: 'Demo Teacher', headTeacher: 'Demo Head', moeCode: 'DEMO/001', weeksInTerm: 13,
                         feeStructure: {} },
@@ -2951,32 +2797,26 @@
                     demoExpiry: expiry.toISOString(),
                     markSheets: [{ name: 'Sheet1', data: {} }],
                     boardingData: { dormitories: [], meals: [], health: [], gatepasses: [] },
-                    parents: [],
-                    feeStructures: [],
-                    payments: [],
+                    dormitories: [],
+                    meals: [],
+                    healthRecords: [],
+                    gatepasses: [],
                     exams: [],
                     examMarks: [],
                     timetables: [],
-                    staff: [],
                     books: [],
                     borrowings: [],
                     homework: [],
                     busRoutes: [],
                     busAttendance: [],
                     notifications: [],
-                    chatMessages: [],
-                    attendanceRecords: [],
-                    dormitories: [],
-                    meals: [],
-                    healthRecords: [],
-                    gatepasses: []
+                    chatMessages: []
                 });
-                currentUserRole = 'superadmin';
+
                 await loadFromFirebase();
                 document.getElementById('authSection').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
                 refreshAllUI();
-                setTimeout(() => checkCollections(), 2000);
                 showToast('3-day demo started!', false);
             } catch (error) { alert('Demo error: ' + error.message); }
         }
@@ -4366,17 +4206,6 @@
 
             container.style.display = 'block';
             container.innerHTML = html;
-        }
-
-        function getStudentAttendanceSummary(studentId) {
-            const records = attendanceRecords.filter(r => r.studentId === studentId);
-            if (records.length === 0) return null;
-            const present = records.filter(r => r.status === 'Present').length;
-            const absent = records.filter(r => r.status === 'Absent').length;
-            const excused = records.filter(r => r.status === 'Excused').length;
-            const total = present + absent + excused;
-            const rate = total > 0 ? ((present / total) * 100).toFixed(1) : 0;
-            return { present, absent, excused, total, rate };
         }
 
         // ==================== MSG HISTORY ====================
@@ -6722,6 +6551,20 @@
             } catch (e) { showToast("❌ Sync failed: " + e.message, true); }
         }
 
+        // ==================== SHOW PERMISSION ERROR ====================
+        function showPermissionError(containerId, retryFn) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = `
+                <div class="permission-error-container">
+                    <i class="fas fa-lock"></i>
+                    <div class="error-title">⛔ Permission Denied</div>
+                    <div class="error-desc">You don't have permission to view this data. Please contact the school administrator.</div>
+                    <button class="retry-btn" onclick="(${retryFn.toString()})()"><i class="fas fa-sync-alt"></i> Retry</button>
+                </div>
+            `;
+        }
+
         // ==================== WINDOW EXPORTS ====================
         window.doLogin = doLogin;
         window.doRegister = doRegister;
@@ -6914,10 +6757,6 @@
         window.renderFeeStructureSettings = renderFeeStructureSettings;
         window.saveFeeStructureSettings = saveFeeStructureSettings;
 
-        // Collection management
-        window.createMissingCollections = createMissingCollections;
-        window.checkCollections = checkCollections;
-
         // ==================== AUTO LOGIN CHECK ====================
         auth.onAuthStateChanged(async (user) => {
             if (user) {
@@ -6927,8 +6766,6 @@
                 document.getElementById('mainApp').style.display = 'block';
                 refreshAllUI();
                 updateNotificationBadge();
-                // Check collections after login
-                setTimeout(() => checkCollections(), 2000);
                 showToast('Welcome back!', false);
             }
         });
@@ -6941,11 +6778,10 @@
         console.log('✅ EduNexa Pro – All Modules Loaded Successfully!');
         console.log('📦 Collections: students, teachers, parents, staff, attendance, fees, exams, timetables, books, homework, busRoutes, boarding (dormitories, meals, health, gatepasses)');
         console.log('🔐 Roles: superadmin, admin, teacher, parent, accountant, librarian, nurse');
-        console.log('🔄 Retry mechanism enabled with 3 attempts, 5s delay');
+        console.log('🔄 Retry mechanism enabled with 2 attempts, 3s delay');
         console.log('📦 Caching enabled – data persists between sessions');
         console.log('⛔ Permission errors will show user-friendly messages');
-        console.log('📁 Use window.createMissingCollections() to create all required collections');
-        console.log('📊 Use window.checkCollections() to verify collection status');
+        console.log('💾 Auto-create collections on first save – all collections initialized');
     </script>
 </body>
-    </html>
+                    </html>
