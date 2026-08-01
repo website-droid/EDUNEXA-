@@ -1178,6 +1178,75 @@
             animation: spin 1s linear infinite;
             color: #166534;
         }
+        /* ===== ADMIN ACTIVITY FEED ===== */
+        .activity-feed {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .activity-item .activity-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .activity-item .activity-content {
+            flex: 1;
+        }
+        .activity-item .activity-content .activity-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #1a3a1a;
+        }
+        .activity-item .activity-content .activity-desc {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .activity-item .activity-content .activity-time {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .activity-icon.student {
+            background: #3b82f6;
+        }
+        .activity-icon.teacher {
+            background: #0d9488;
+        }
+        .activity-icon.parent {
+            background: #f59e0b;
+        }
+        .activity-icon.staff {
+            background: #7c3aed;
+        }
+        .activity-icon.attendance {
+            background: #0891b2;
+        }
+        .activity-icon.payment {
+            background: #db2777;
+        }
+        .activity-icon.exam {
+            background: #dc2626;
+        }
+        .activity-icon.homework {
+            background: #0284c7;
+        }
+        .activity-icon.book {
+            background: #4f46e5;
+        }
+        .activity-icon.general {
+            background: #64748b;
+        }
         @media print {
             body * {
                 visibility: hidden;
@@ -1633,10 +1702,26 @@
                 <button class="action-btn pink" onclick="window.showSection('parents')">👪 Parents</button>
                 <button class="action-btn indigo" onclick="window.showSection('fees')">💰 Fees</button>
             </div>
+            <!-- ===== ADMIN OVERVIEW STATS ===== -->
+            <div class="section-card">
+                <div class="section-header"><h3>📊 School Overview</h3><button class="action-btn info" onclick="window.loadDashboard()">🔄 Refresh</button></div>
+                <div id="overviewStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;padding:5px 0;">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+            <!-- ===== ACTIVITY FEED ===== -->
+            <div class="section-card">
+                <div class="section-header"><h3>🔄 Recent Activity</h3></div>
+                <div id="activityFeed" class="activity-feed">
+                    <p style="color:#64748b;text-align:center;padding:20px;">Loading activities...</p>
+                </div>
+            </div>
+            <!-- ===== TOP PERFORMERS ===== -->
             <div class="section-card">
                 <div class="section-header"><h3>🏆 Top Performers</h3><button class="action-btn" onclick="window.showSection('ranking')">View All →</button></div>
                 <div class="table-wrapper"><table class="data-table"><thead><tr><th>Rank</th><th>Name</th><th>Class</th><th>Stream</th><th>Avg%</th><th>Grade</th></tr></thead><tbody id="topPerformersBody"></tbody></table></div>
             </div>
+            <!-- ===== FEE SUMMARY ===== -->
             <div class="section-card" style="margin-top:10px;">
                 <div class="section-header"><h3>💰 Fee Collection Summary</h3><button class="action-btn info" onclick="window.loadFeeSummary()">Refresh</button></div>
                 <div id="feeSummaryWidget" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:5px 0;">
@@ -1646,6 +1731,7 @@
                     <div class="stat-card"><div class="stat-icon"><i class="fas fa-percent"></i></div><div><h3 id="feeCollectionRate">0%</h3><p>Collection Rate</p></div></div>
                 </div>
             </div>
+            <!-- ===== TODAY'S ATTENDANCE ===== -->
             <div class="section-card">
                 <div class="section-header"><h3>📅 Today's Attendance</h3><button class="action-btn info" onclick="window.loadTodayAttendanceWidget()">Refresh</button></div>
                 <div id="todayAttendanceWidget" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:5px 0;">
@@ -2091,8 +2177,8 @@
 
     <script>
         // ======================================================================
-        //  EDUNEXA PRO – SURGICAL FIX: users COLLECTION & AUTO-POPULATE
-        //  All collections initialized, migration scripts provided.
+        //  EDUNEXA PRO – SURGICAL FIX: MOE CODE in teacher, parent, staff
+        //  Each registration now stores the school's MOE code.
         // ======================================================================
 
         // ==================== FIREBASE CONFIG ====================
@@ -2631,7 +2717,7 @@
         function refreshAllUI() {
             try {
                 window.filterStudents();
-                window.loadDashboard();
+                window.loadDashboard(); // this now includes overview stats and activity feed
                 window.loadTeachers();
                 window.loadPayments();
                 window.loadRankings();
@@ -2698,6 +2784,7 @@
                             currentUserRole === 'teacher' ? 'teacher' :
                             currentUserRole === 'staff' ? 'staff' : 'admin',
                         schoolId: currentUser.uid, // admin's schoolId is their own UID
+                        moeCode: settings.moeCode || '',
                         name: email.split('@')[0],
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
@@ -2776,6 +2863,7 @@
                     email: schoolEmail,
                     role: 'admin',
                     schoolId: currentUser.uid,
+                    moeCode: settings.moeCode || '',
                     name: schoolName,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
@@ -2842,6 +2930,7 @@
                     email: demoEmail,
                     role: 'admin',
                     schoolId: currentUser.uid,
+                    moeCode: settings.moeCode || '',
                     name: schoolName,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
@@ -2929,22 +3018,189 @@
             } catch (e) { console.error("Show section error:", e); }
         }
 
-        // ==================== LOAD DASHBOARD ====================
+        // ==================== LOAD DASHBOARD (ENHANCED) ====================
         function loadDashboard() {
             try {
-                const total = students.length;
-                const avgAll = total ? students.reduce((a, b) => a + avg(b), 0) / total : 0;
+                // --- Overview Stats ---
+                const totalStudents = students.length;
+                const totalTeachers = teachers.length;
+                const totalParents = parents.length;
+                const totalStaff = staff.length;
+                const totalAttendance = attendanceRecords.length;
+                const totalPayments = payments.length;
+                const avgAll = totalStudents ? students.reduce((a, b) => a + avg(b), 0) / totalStudents : 0;
                 const boardingCount = students.filter(s => s.isBoarding).length;
-                const parentCount = parents.length;
-                const staffCount = staff.length;
-                document.getElementById('statsGrid').innerHTML = `
-                    <div class="stat-card" onclick="window.showSection('students')"><div class="stat-icon"><i class="fas fa-users"></i></div><div><h3>${total}</h3><p>Total Students</p></div></div>
-                    <div class="stat-card" onclick="window.showSection('boarding')"><div class="stat-icon"><i class="fas fa-bed"></i></div><div><h3>${boardingCount}</h3><p>Boarding Students</p></div></div>
-                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-chart-line"></i></div><div><h3>${avgAll.toFixed(1)}%</h3><p>School Average</p></div></div>
-                    <div class="stat-card" onclick="window.showSection('teachers')"><div class="stat-icon"><i class="fas fa-chalkboard-user"></i></div><div><h3>${teachers.length}</h3><p>Class Teachers</p></div></div>
-                    <div class="stat-card" onclick="window.showSection('parents')"><div class="stat-icon"><i class="fas fa-user-friends"></i></div><div><h3>${parentCount}</h3><p>Parents</p></div></div>
-                    <div class="stat-card" onclick="window.showSection('staff')"><div class="stat-icon"><i class="fas fa-user-tie"></i></div><div><h3>${staffCount}</h3><p>Staff</p></div></div>
+
+                const overviewHtml = `
+                    <div class="stat-card" onclick="window.showSection('students')"><div class="stat-icon"><i class="fas fa-users"></i></div><div><h3>${totalStudents}</h3><p>Students</p></div></div>
+                    <div class="stat-card" onclick="window.showSection('teachers')"><div class="stat-icon"><i class="fas fa-chalkboard-user"></i></div><div><h3>${totalTeachers}</h3><p>Teachers</p></div></div>
+                    <div class="stat-card" onclick="window.showSection('parents')"><div class="stat-icon"><i class="fas fa-user-friends"></i></div><div><h3>${totalParents}</h3><p>Parents</p></div></div>
+                    <div class="stat-card" onclick="window.showSection('staff')"><div class="stat-icon"><i class="fas fa-user-tie"></i></div><div><h3>${totalStaff}</h3><p>Staff</p></div></div>
+                    <div class="stat-card" onclick="window.showSection('attendance')"><div class="stat-icon"><i class="fas fa-calendar-check"></i></div><div><h3>${totalAttendance}</h3><p>Attendance Records</p></div></div>
+                    <div class="stat-card" onclick="window.showSection('fees')"><div class="stat-icon"><i class="fas fa-coins"></i></div><div><h3>${totalPayments}</h3><p>Payments</p></div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-chart-line"></i></div><div><h3>${avgAll.toFixed(1)}%</h3><p>Avg Score</p></div></div>
+                    <div class="stat-card" onclick="window.showSection('boarding')"><div class="stat-icon"><i class="fas fa-bed"></i></div><div><h3>${boardingCount}</h3><p>Boarding</p></div></div>
                 `;
+                document.getElementById('overviewStats').innerHTML = overviewHtml;
+
+                // --- Activity Feed ---
+                const activities = [];
+
+                // Students added
+                students.forEach(s => {
+                    if (s.regDate) {
+                        activities.push({
+                            type: 'student',
+                            title: 'New Student Registered',
+                            desc: `${s.name} (${s.class} - ${s.stream})`,
+                            time: s.regDate,
+                            icon: 'student'
+                        });
+                    }
+                });
+
+                // Teachers added
+                teachers.forEach(t => {
+                    if (t.created_at) {
+                        activities.push({
+                            type: 'teacher',
+                            title: 'New Teacher Added',
+                            desc: `${t.name} (${t.grade} - ${t.stream})`,
+                            time: t.created_at,
+                            icon: 'teacher'
+                        });
+                    }
+                });
+
+                // Parents added
+                parents.forEach(p => {
+                    if (p.created_at) {
+                        activities.push({
+                            type: 'parent',
+                            title: 'New Parent Registered',
+                            desc: `${p.name} (${p.email})`,
+                            time: p.created_at,
+                            icon: 'parent'
+                        });
+                    }
+                });
+
+                // Staff added
+                staff.forEach(s => {
+                    if (s.created_at) {
+                        activities.push({
+                            type: 'staff',
+                            title: 'New Staff Added',
+                            desc: `${s.name} (${s.role})`,
+                            time: s.created_at,
+                            icon: 'staff'
+                        });
+                    }
+                });
+
+                // Attendance records (recent)
+                attendanceRecords.slice(0, 20).forEach(a => {
+                    const student = students.find(s => s.id === a.studentId);
+                    if (student) {
+                        activities.push({
+                            type: 'attendance',
+                            title: 'Attendance Marked',
+                            desc: `${student.name} - ${a.status} on ${a.date}`,
+                            time: a.timestamp || a.date,
+                            icon: 'attendance'
+                        });
+                    }
+                });
+
+                // Payments
+                payments.slice(0, 20).forEach(p => {
+                    const student = students.find(s => s.id === p.studentId);
+                    if (student) {
+                        activities.push({
+                            type: 'payment',
+                            title: 'Payment Recorded',
+                            desc: `KSh ${p.amount.toLocaleString()} from ${student.name}`,
+                            time: p.recorded_at || p.date,
+                            icon: 'payment'
+                        });
+                    }
+                });
+
+                // Exams
+                exams.slice(0, 10).forEach(e => {
+                    activities.push({
+                        type: 'exam',
+                        title: 'Exam Created',
+                        desc: `${e.name} (${e.grade} - ${e.stream})`,
+                        time: e.created_at,
+                        icon: 'exam'
+                    });
+                });
+
+                // Homework
+                homework.slice(0, 10).forEach(h => {
+                    activities.push({
+                        type: 'homework',
+                        title: 'Homework Assigned',
+                        desc: `${h.title} (${h.grade} - ${h.stream})`,
+                        time: h.created_at,
+                        icon: 'homework'
+                    });
+                });
+
+                // Books
+                books.slice(0, 10).forEach(b => {
+                    activities.push({
+                        type: 'book',
+                        title: 'Book Added',
+                        desc: `${b.title} by ${b.author}`,
+                        time: b.created_at,
+                        icon: 'book'
+                    });
+                });
+
+                // Sort by time (most recent first)
+                activities.sort((a, b) => {
+                    const timeA = a.time ? new Date(a.time).getTime() : 0;
+                    const timeB = b.time ? new Date(b.time).getTime() : 0;
+                    return timeB - timeA;
+                });
+
+                // Limit to last 30 activities
+                const recentActivities = activities.slice(0, 30);
+
+                let feedHtml = '';
+                if (recentActivities.length === 0) {
+                    feedHtml = '<p style="color:#64748b;text-align:center;padding:20px;">No recent activity found.</p>';
+                } else {
+                    recentActivities.forEach(act => {
+                        const iconClass = act.icon || 'general';
+                        const timeStr = act.time ? new Date(act.time).toLocaleString() : '';
+                        feedHtml += `
+                            <div class="activity-item">
+                                <div class="activity-icon ${iconClass}">
+                                    <i class="fas fa-${iconClass === 'student' ? 'user-graduate' : 
+                                        iconClass === 'teacher' ? 'chalkboard-teacher' : 
+                                        iconClass === 'parent' ? 'user-friends' : 
+                                        iconClass === 'staff' ? 'user-tie' : 
+                                        iconClass === 'attendance' ? 'calendar-check' : 
+                                        iconClass === 'payment' ? 'coins' : 
+                                        iconClass === 'exam' ? 'pencil-alt' : 
+                                        iconClass === 'homework' ? 'tasks' : 
+                                        iconClass === 'book' ? 'book' : 'bell'}"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <div class="activity-title">${escapeHtml(act.title)}</div>
+                                    <div class="activity-desc">${escapeHtml(act.desc)}</div>
+                                    <div class="activity-time">${timeStr}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                document.getElementById('activityFeed').innerHTML = feedHtml;
+
+                // --- Top Performers (existing) ---
                 const top5 = [...students].sort((a, b) => avg(b) - avg(a)).slice(0, 5);
                 let tbody = '';
                 if (top5.length === 0) { tbody = '<tr><td colspan="5" style="text-align:center;padding:20px;">No students yet</td></tr>'; } else {
@@ -2955,9 +3211,19 @@
                     });
                 }
                 document.getElementById('topPerformersBody').innerHTML = tbody;
+
+                // --- Fee summary & attendance widgets (existing) ---
                 window.loadFeeSummary();
                 window.loadTodayAttendanceWidget();
-            } catch (e) { console.error("loadDashboard error:", e); }
+
+                // --- Update stats grid (legacy) ---
+                // (already covered by overview stats, but keep for compatibility)
+                document.getElementById('statsGrid').innerHTML = overviewHtml; // reuse
+
+            } catch (e) {
+                console.error("loadDashboard error:", e);
+                showToast('Error loading dashboard.', true);
+            }
         }
 
         // ==================== FEE SUMMARY WIDGET ====================
@@ -3265,7 +3531,7 @@
                 showToast("Error processing bulk registration", true); }
         }
 
-        // ==================== TEACHER CRUD ====================
+        // ==================== TEACHER CRUD (with MOE CODE) ====================
         function openAddTeacher() {
             try {
                 document.getElementById("teacherName").value = "";
@@ -3308,14 +3574,28 @@
                 }
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 const authUid = userCredential.user.uid;
-                teachers.push({ id: Date.now(), name, grade, stream, phone, email, auth_uid: authUid,
-                    created_at: new Date().toISOString() });
 
-                // Create users document for this teacher
+                // Get current MOE code from settings
+                const moeCode = settings.moeCode || '';
+
+                teachers.push({
+                    id: Date.now(),
+                    name,
+                    grade,
+                    stream,
+                    phone,
+                    email,
+                    auth_uid: authUid,
+                    moeCode: moeCode, // <--- SURGICAL FIX: MOE CODE added
+                    created_at: new Date().toISOString()
+                });
+
+                // Create users document for this teacher with MOE code
                 await db.collection('users').doc(authUid).set({
                     email: email,
                     role: 'teacher',
                     schoolId: currentUser.uid,
+                    moeCode: moeCode, // <--- SURGICAL FIX: MOE CODE added
                     name: name,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
@@ -3324,7 +3604,8 @@
                 await loadFromFirebase();
                 closeModal("teacherModal");
                 refreshAllUI();
-                showToast(`✅ Class Teacher ${name} assigned to ${grade} - ${stream} with login credentials!`, false);
+                showToast(`✅ Class Teacher ${name} assigned to ${grade} - ${stream} with login credentials! (MOE: ${moeCode})`,
+                    false);
             } catch (error) {
                 console.error("Error creating teacher:", error);
                 if (error.code === 'auth/email-already-in-use') {
@@ -3354,11 +3635,12 @@
             try {
                 const userCred = await auth.createUserWithEmailAndPassword(teacher.email, password);
                 teacher.auth_uid = userCred.user.uid;
-                // Create users document
+                const moeCode = settings.moeCode || '';
                 await db.collection('users').doc(userCred.user.uid).set({
                     email: teacher.email,
                     role: 'teacher',
                     schoolId: currentUser.uid,
+                    moeCode: moeCode,
                     name: teacher.name,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
@@ -3392,11 +3674,12 @@
                 } else {
                     const userCred = await auth.createUserWithEmailAndPassword(teacher.email, pwd);
                     teacher.auth_uid = userCred.user.uid;
-                    // Create users document if not exists
+                    const moeCode = settings.moeCode || '';
                     await db.collection('users').doc(userCred.user.uid).set({
                         email: teacher.email,
                         role: 'teacher',
                         schoolId: currentUser.uid,
+                        moeCode: moeCode,
                         name: teacher.name,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
@@ -4918,7 +5201,7 @@
                     .message + '</span>'; }
         }
 
-        // ==================== PARENT PORTAL ====================
+        // ==================== PARENT PORTAL (with MOE CODE) ====================
         function openAddParent() {
             try {
                 document.getElementById('parentName').value = '';
@@ -4950,6 +5233,7 @@
                     parseInt(cb.value));
                 if (selectedStudents.length === 0) { showToast('Please link at least one student.', true); return; }
                 const userCred = await auth.createUserWithEmailAndPassword(email, password);
+                const moeCode = settings.moeCode || '';
                 const parent = {
                     id: Date.now(),
                     name,
@@ -4957,6 +5241,7 @@
                     phone,
                     auth_uid: userCred.user.uid,
                     studentIds: selectedStudents,
+                    moeCode: moeCode, // <--- SURGICAL FIX: MOE CODE added
                     created_at: new Date().toISOString()
                 };
                 parents.push(parent);
@@ -4965,11 +5250,12 @@
                     if (student) student.parentId = parent.id;
                 });
 
-                // Create users document for parent
+                // Create users document for parent with MOE code
                 await db.collection('users').doc(userCred.user.uid).set({
                     email: email,
                     role: 'parent',
                     schoolId: currentUser.uid,
+                    moeCode: moeCode, // <--- SURGICAL FIX: MOE CODE added
                     name: name,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
@@ -4978,7 +5264,7 @@
                 await loadFromFirebase();
                 closeModal('parentModal');
                 loadParents();
-                showToast(`✅ Parent ${name} created with login credentials!`, false);
+                showToast(`✅ Parent ${name} created with login credentials! (MOE: ${moeCode})`, false);
             } catch (e) {
                 console.error("Save parent error:", e);
                 if (e.code === 'auth/email-already-in-use') {
@@ -5083,10 +5369,12 @@
             try {
                 const userCred = await auth.createUserWithEmailAndPassword(p.email, password);
                 p.auth_uid = userCred.user.uid;
+                const moeCode = settings.moeCode || '';
                 await db.collection('users').doc(userCred.user.uid).set({
                     email: p.email,
                     role: 'parent',
                     schoolId: currentUser.uid,
+                    moeCode: moeCode,
                     name: p.name,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
@@ -5681,7 +5969,7 @@
             }
         }
 
-        // ==================== STAFF MANAGEMENT ====================
+        // ==================== STAFF MANAGEMENT (with MOE CODE) ====================
         function openAddStaff() {
             try {
                 document.getElementById('staffName').value = '';
@@ -5705,6 +5993,7 @@
                 if (password.length < 6) { showToast('Password must be at least 6 characters.', true); return; }
                 if (password !== confirm) { showToast('Passwords do not match.', true); return; }
                 const userCred = await auth.createUserWithEmailAndPassword(email, password);
+                const moeCode = settings.moeCode || '';
                 staff.push({
                     id: Date.now(),
                     name,
@@ -5712,14 +6001,16 @@
                     email,
                     phone,
                     auth_uid: userCred.user.uid,
+                    moeCode: moeCode, // <--- SURGICAL FIX: MOE CODE added
                     created_at: new Date().toISOString()
                 });
 
-                // Create users document for staff
+                // Create users document for staff with MOE code
                 await db.collection('users').doc(userCred.user.uid).set({
                     email: email,
                     role: 'staff',
                     schoolId: currentUser.uid,
+                    moeCode: moeCode, // <--- SURGICAL FIX: MOE CODE added
                     name: name,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
@@ -5728,7 +6019,7 @@
                 await loadFromFirebase();
                 closeModal('staffModal');
                 loadStaff();
-                showToast(`✅ Staff ${name} (${role}) added!`, false);
+                showToast(`✅ Staff ${name} (${role}) added! (MOE: ${moeCode})`, false);
             } catch (e) {
                 console.error("Save staff error:", e);
                 if (e.code === 'auth/email-already-in-use') {
@@ -5796,10 +6087,12 @@
             try {
                 const userCred = await auth.createUserWithEmailAndPassword(s.email, password);
                 s.auth_uid = userCred.user.uid;
+                const moeCode = settings.moeCode || '';
                 await db.collection('users').doc(userCred.user.uid).set({
                     email: s.email,
                     role: 'staff',
                     schoolId: currentUser.uid,
+                    moeCode: moeCode,
                     name: s.name,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
@@ -6658,51 +6951,6 @@
             `;
         }
 
-        // ==================== MIGRATION SCRIPTS ====================
-        // Browser Console Migration Script
-        // To run: copy and paste this into the browser console while logged in as admin.
-        /*
-        (async function migrateUsers() {
-            if (!firebase.auth().currentUser) {
-                console.error('❌ You must be logged in as an admin to run this script.');
-                return;
-            }
-            const db = firebase.firestore();
-            const currentUser = firebase.auth().currentUser;
-            const adminUid = currentUser.uid;
-
-            // Fetch all users from Firebase Auth (requires admin SDK, but we can list manually)
-            // For manual migration, define your users array:
-            const usersList = [
-                // { uid: '...', email: '...', role: '...', name: '...' }
-            ];
-
-            let created = 0, skipped = 0;
-            for (const user of usersList) {
-                const docRef = db.collection('users').doc(user.uid);
-                const doc = await docRef.get();
-                if (doc.exists) {
-                    console.log(`⏭️ User ${user.email} already has a users document.`);
-                    skipped++;
-                    continue;
-                }
-                await docRef.set({
-                    email: user.email,
-                    role: user.role,
-                    schoolId: user.role === 'admin' ? user.uid : adminUid,
-                    name: user.name || user.email.split('@')[0],
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                console.log(`✅ Created users document for ${user.email}`);
-                created++;
-            }
-            console.log(`📊 Summary: ${created} created, ${skipped} skipped.`);
-        })();
-        */
-
-        // Node.js Migration Script (separate file)
-        // See instructions in the prompt.
-
         // ==================== WINDOW EXPORTS ====================
         window.doLogin = doLogin;
         window.doRegister = doRegister;
@@ -6920,8 +7168,8 @@
         console.log('📦 Caching enabled – data persists between sessions');
         console.log('⛔ Permission errors will show user-friendly messages');
         console.log('💾 Auto-create collections on first save – all collections initialized');
-        console.log('👤 users collection created for every new teacher/parent/staff');
-        console.log('📋 Migration scripts provided for existing users (see console comments)');
+        console.log('👤 users collection created for every new teacher/parent/staff with MOE code');
+        console.log('🏫 Admin dashboard now shows unified overview and activity feed.');
     </script>
 </body>
 </html>
