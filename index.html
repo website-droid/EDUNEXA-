@@ -2091,8 +2091,8 @@
 
     <script>
         // ======================================================================
-        //  EDUNEXA PRO – SURGICAL FIX: PERMISSIONS & COLLECTION AUTO-CREATION
-        //  All modules integrated with proper error handling, caching, and retry.
+        //  EDUNEXA PRO – SURGICAL FIX: users COLLECTION & AUTO-POPULATE
+        //  All collections initialized, migration scripts provided.
         // ======================================================================
 
         // ==================== FIREBASE CONFIG ====================
@@ -2689,6 +2689,21 @@
                     if (adminStaff) { currentUserRole = 'superadmin'; }
                 }
 
+                // Ensure users document for admin (if not exists)
+                const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                if (!userDoc.exists) {
+                    await db.collection('users').doc(currentUser.uid).set({
+                        email: email,
+                        role: currentUserRole === 'parent' ? 'parent' :
+                            currentUserRole === 'teacher' ? 'teacher' :
+                            currentUserRole === 'staff' ? 'staff' : 'admin',
+                        schoolId: currentUser.uid, // admin's schoolId is their own UID
+                        name: email.split('@')[0],
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    console.log(`✅ Created users document for admin ${email}`);
+                }
+
                 const loaded = await loadFromFirebase();
                 if (loaded) {
                     document.getElementById('authSection').style.display = 'none';
@@ -2756,6 +2771,15 @@
                     chatMessages: []
                 });
 
+                // Create users document for admin
+                await db.collection('users').doc(currentUser.uid).set({
+                    email: schoolEmail,
+                    role: 'admin',
+                    schoolId: currentUser.uid,
+                    name: schoolName,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
                 await loadFromFirebase();
                 document.getElementById('authSection').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
@@ -2811,6 +2835,15 @@
                     busAttendance: [],
                     notifications: [],
                     chatMessages: []
+                });
+
+                // Create users document for demo admin
+                await db.collection('users').doc(currentUser.uid).set({
+                    email: demoEmail,
+                    role: 'admin',
+                    schoolId: currentUser.uid,
+                    name: schoolName,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
                 await loadFromFirebase();
@@ -3277,6 +3310,16 @@
                 const authUid = userCredential.user.uid;
                 teachers.push({ id: Date.now(), name, grade, stream, phone, email, auth_uid: authUid,
                     created_at: new Date().toISOString() });
+
+                // Create users document for this teacher
+                await db.collection('users').doc(authUid).set({
+                    email: email,
+                    role: 'teacher',
+                    schoolId: currentUser.uid,
+                    name: name,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+
                 await saveToFirebase();
                 await loadFromFirebase();
                 closeModal("teacherModal");
@@ -3311,6 +3354,14 @@
             try {
                 const userCred = await auth.createUserWithEmailAndPassword(teacher.email, password);
                 teacher.auth_uid = userCred.user.uid;
+                // Create users document
+                await db.collection('users').doc(userCred.user.uid).set({
+                    email: teacher.email,
+                    role: 'teacher',
+                    schoolId: currentUser.uid,
+                    name: teacher.name,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
                 await saveToFirebase();
                 await loadFromFirebase();
                 filterTeachers();
@@ -3341,6 +3392,14 @@
                 } else {
                     const userCred = await auth.createUserWithEmailAndPassword(teacher.email, pwd);
                     teacher.auth_uid = userCred.user.uid;
+                    // Create users document if not exists
+                    await db.collection('users').doc(userCred.user.uid).set({
+                        email: teacher.email,
+                        role: 'teacher',
+                        schoolId: currentUser.uid,
+                        name: teacher.name,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
                 }
                 await saveToFirebase();
                 await loadFromFirebase();
@@ -4905,6 +4964,16 @@
                     const student = students.find(s => s.id === sid);
                     if (student) student.parentId = parent.id;
                 });
+
+                // Create users document for parent
+                await db.collection('users').doc(userCred.user.uid).set({
+                    email: email,
+                    role: 'parent',
+                    schoolId: currentUser.uid,
+                    name: name,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+
                 await saveToFirebase();
                 await loadFromFirebase();
                 closeModal('parentModal');
@@ -5014,6 +5083,13 @@
             try {
                 const userCred = await auth.createUserWithEmailAndPassword(p.email, password);
                 p.auth_uid = userCred.user.uid;
+                await db.collection('users').doc(userCred.user.uid).set({
+                    email: p.email,
+                    role: 'parent',
+                    schoolId: currentUser.uid,
+                    name: p.name,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
                 await saveToFirebase();
                 await loadFromFirebase();
                 loadParents();
@@ -5638,6 +5714,16 @@
                     auth_uid: userCred.user.uid,
                     created_at: new Date().toISOString()
                 });
+
+                // Create users document for staff
+                await db.collection('users').doc(userCred.user.uid).set({
+                    email: email,
+                    role: 'staff',
+                    schoolId: currentUser.uid,
+                    name: name,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+
                 await saveToFirebase();
                 await loadFromFirebase();
                 closeModal('staffModal');
@@ -5710,6 +5796,13 @@
             try {
                 const userCred = await auth.createUserWithEmailAndPassword(s.email, password);
                 s.auth_uid = userCred.user.uid;
+                await db.collection('users').doc(userCred.user.uid).set({
+                    email: s.email,
+                    role: 'staff',
+                    schoolId: currentUser.uid,
+                    name: s.name,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
                 await saveToFirebase();
                 await loadFromFirebase();
                 loadStaff();
@@ -6565,6 +6658,51 @@
             `;
         }
 
+        // ==================== MIGRATION SCRIPTS ====================
+        // Browser Console Migration Script
+        // To run: copy and paste this into the browser console while logged in as admin.
+        /*
+        (async function migrateUsers() {
+            if (!firebase.auth().currentUser) {
+                console.error('❌ You must be logged in as an admin to run this script.');
+                return;
+            }
+            const db = firebase.firestore();
+            const currentUser = firebase.auth().currentUser;
+            const adminUid = currentUser.uid;
+
+            // Fetch all users from Firebase Auth (requires admin SDK, but we can list manually)
+            // For manual migration, define your users array:
+            const usersList = [
+                // { uid: '...', email: '...', role: '...', name: '...' }
+            ];
+
+            let created = 0, skipped = 0;
+            for (const user of usersList) {
+                const docRef = db.collection('users').doc(user.uid);
+                const doc = await docRef.get();
+                if (doc.exists) {
+                    console.log(`⏭️ User ${user.email} already has a users document.`);
+                    skipped++;
+                    continue;
+                }
+                await docRef.set({
+                    email: user.email,
+                    role: user.role,
+                    schoolId: user.role === 'admin' ? user.uid : adminUid,
+                    name: user.name || user.email.split('@')[0],
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                console.log(`✅ Created users document for ${user.email}`);
+                created++;
+            }
+            console.log(`📊 Summary: ${created} created, ${skipped} skipped.`);
+        })();
+        */
+
+        // Node.js Migration Script (separate file)
+        // See instructions in the prompt.
+
         // ==================== WINDOW EXPORTS ====================
         window.doLogin = doLogin;
         window.doRegister = doRegister;
@@ -6782,6 +6920,8 @@
         console.log('📦 Caching enabled – data persists between sessions');
         console.log('⛔ Permission errors will show user-friendly messages');
         console.log('💾 Auto-create collections on first save – all collections initialized');
+        console.log('👤 users collection created for every new teacher/parent/staff');
+        console.log('📋 Migration scripts provided for existing users (see console comments)');
     </script>
 </body>
-                    </html>
+</html>
