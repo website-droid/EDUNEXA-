@@ -1807,6 +1807,8 @@
         // All school-owned data must resolve to the owning school's account ID.
         let schoolAccountId = null;
         let legacyTeacherRecoveryPending = false;
+        let unsubscribeMarksRealtime = null;
+        let lastRemoteMarkUpdateAt = 0;
 
         function getSchoolAccountId() {
             return schoolAccountId || (currentUser && currentUser.uid) || null;
@@ -2463,8 +2465,42 @@
                     }
                 });
 
+            startMarksRealtimeListener();
+
             console.log(`✅ Loaded ${students.length} students, ${teachers.length} teachers, ${parents.length} parents, ${staff.length} staff, ${attendanceRecords.length} attendance records`);
             dataLoaded = true;
+        }
+
+        // SURGICAL REALTIME MARK SYNC: a dedicated listener keeps mark entry screens
+        // synchronized across Computer A/B/C/D without requiring a manual refresh.
+        function startMarksRealtimeListener() {
+            try {
+                if (unsubscribeMarksRealtime) { unsubscribeMarksRealtime(); unsubscribeMarksRealtime = null; }
+                const ref = getSchoolDocRef();
+                if (!ref) return;
+                unsubscribeMarksRealtime = ref.onSnapshot((snap) => {
+                    if (!snap.exists || isImporting) return;
+                    const data = snap.data() || {};
+                    if (!Array.isArray(data.markSheets)) return;
+                    const incoming = normalizeMarkSheets(data.markSheets);
+                    const incomingJson = JSON.stringify(incoming);
+                    const currentJson = JSON.stringify(normalizeMarkSheets(markSheets || []));
+                    if (incomingJson === currentJson) return;
+                    markSheets = incoming;
+                    lastCloudState = { ...(lastCloudState || {}), markSheets: incoming };
+                    dataLoaded = true;
+                    lastRemoteMarkUpdateAt = Date.now();
+                    // Do not rebuild the entire application here. Only refresh the
+                    // marks table so other computers see changes immediately.
+                    const marksSection = document.getElementById('marksSection');
+                    if (marksSection && marksSection.style.display !== 'none') {
+                        renderCurrentSheet();
+                    }
+                    console.log('🔄 Marks synchronized from another computer');
+                }, (err) => console.warn('Marks realtime listener error:', err));
+            } catch (e) {
+                console.warn('Could not start marks realtime listener:', e);
+            }
         }
 
         async function refreshFirebaseData() {
@@ -2721,6 +2757,7 @@
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 currentUser = userCredential.user;
                 await resolveSchoolAccountId(currentUser);
+                startMarksRealtimeListener();
 
                 // Enhanced role detection - check users collection first
                 const userDoc = await db.collection('users').doc(currentUser.uid).get();
