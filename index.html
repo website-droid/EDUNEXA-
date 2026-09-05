@@ -5180,6 +5180,61 @@
             finally { activeReportAssessmentId=previous; }
         }
 
+        // ==================== SURGICAL FIX: ASSESSMENT HELPERS ====================
+        // These helpers are required by the merit-list, analytics and report modules.
+        // They were present in the source build but were accidentally omitted from the
+        // generated file, which caused: populateAssessmentSelect is not defined.
+        let activeReportAssessmentId = null;
+
+        function getAssessmentById(id) {
+            markSheets = normalizeMarkSheets(markSheets);
+            return markSheets.find(x => String(x.id) === String(id)) || getCurrentAssessmentSheet();
+        }
+
+        function getReportAssessment() {
+            const id = document.getElementById('reportAssessment')?.value || activeReportAssessmentId;
+            return getAssessmentById(id);
+        }
+
+        function getAssessmentMark(student, subject, assessmentId) {
+            const sheet = getAssessmentById(assessmentId);
+            const key = `${student.class}_${student.stream}`;
+            const data = sheet?.data?.[key]?.[student.id];
+            if (data && data[subject] !== undefined) return Number(data[subject]) || 0;
+            // Preserve the original/legacy marks structure when using Sheet 1.
+            return sheet?.id === 'legacy-sheet-1' ? (Number(getMark(student, subject)) || 0) : 0;
+        }
+
+        function assessmentAvg(student, assessmentId) {
+            const subs = getSubjects(student.class);
+            if (!subs.length) return 0;
+            return subs.reduce((sum, sub) => sum + getAssessmentMark(student, sub, assessmentId), 0) / subs.length;
+        }
+
+        function assessmentTotal(student, assessmentId) {
+            return getSubjects(student.class).reduce((sum, sub) => sum + getAssessmentMark(student, sub, assessmentId), 0);
+        }
+
+        function assessmentPoints(student, assessmentId) {
+            const subs = getSubjects(student.class);
+            return subs.reduce((sum, sub) => sum + getPerformanceLevel(getAssessmentMark(student, sub, assessmentId)).points, 0);
+        }
+
+        function populateAssessmentSelect(id, includeCurrent = true) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            markSheets = normalizeMarkSheets(markSheets);
+            const current = getCurrentAssessmentSheet();
+            el.innerHTML = (includeCurrent ? '<option value="">Current Assessment</option>' : '') +
+                markSheets.map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)} — ${escapeHtml(x.academicYear)} • ${escapeHtml(x.term)} • ${escapeHtml(x.assessmentType)}</option>`).join('');
+            if (current && [...el.options].some(o => o.value === String(current.id))) el.value = current.id;
+        }
+
+        function getReportAssessmentId(selectId = 'reportAssessment') {
+            const v = document.getElementById(selectId)?.value;
+            return v || getCurrentAssessmentSheet().id;
+        }
+
         function showMeritListSelector(){
             populateAssessmentSelect('meritAssessment',false);
             const streams=loadStreams(); const ss=document.getElementById('meritStream'); ss.innerHTML=streams.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
