@@ -745,6 +745,9 @@
         .merit-master-table .subject-mark small{display:inline!important;margin-left:2px!important;font-size:7px!important;font-weight:700!important;}
         .merit-section-title{font-size:11px!important;margin:6px 0 3px!important;}
         .merit-table{font-size:9px!important;}
+        .merit-table th.vertical-header{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;min-width:24px;padding:5px 3px!important;}
+        .mean-grade-summary th.vertical-header{height:86px;vertical-align:middle!important;}
+
         .merit-table th{background:#eee!important;}
         .merit-top5-table th,.merit-top5-table td{padding:2px 3px!important;}
         .mean-grade-summary th,.mean-grade-summary td{padding:2px!important;font-size:6.5px!important;}
@@ -2116,6 +2119,12 @@
 
         // ==================== FIREBASE CRUD ====================
         function buildPersistedSchoolData() {
+            // SURGICAL CLASS-TEACHER PERSISTENCE: keep a canonical mirror in
+            // settings so older/newer readers cannot drop class-teacher records.
+            const persistedSettings = {
+                ...(settings || {}),
+                classTeachers: (teachers || []).map(t => ({...t}))
+            };
             return {
                 students: students || [],
                 deletedStudents: deletedStudents || [],
@@ -2126,7 +2135,7 @@
                 feeStructures: feeStructures || [],
                 payments: payments || [],
                 attendanceRecords: attendanceRecords || [],
-                settings: settings || {},
+                settings: persistedSettings,
                 nextCode: nextCode || 1,
                 isDemo: isDemo || false,
                 demoExpiry: demoExpiry || null,
@@ -2439,6 +2448,7 @@
                         payments = d.payments || payments;
                         attendanceRecords = d.attendanceRecords || attendanceRecords;
                         settings = { ...settings, ...(d.settings || {}) };
+                        settings.classTeachers = teachers.map(t => ({...t}));
                         renderAllSchoolAssets();
                         markSheets = normalizeMarkSheets(d.markSheets || markSheets);
                         boardingData = d.boardingData || boardingData;
@@ -2525,6 +2535,7 @@
                     payments = data.payments || payments;
                     attendanceRecords = data.attendanceRecords || attendanceRecords;
                     settings = { ...settings, ...(data.settings || {}) };
+                    settings.classTeachers = teachers.map(t => ({...t}));
                     renderAllSchoolAssets();
                     markSheets = normalizeMarkSheets(data.markSheets || markSheets);
                     boardingData = data.boardingData || boardingData;
@@ -3860,7 +3871,7 @@
                 academicYear: sheet.academicYear || fallbackYear,
                 term: sheet.term || fallbackTerm,
                 assessmentType: sheet.assessmentType || (i === 0 ? "CAT 1" : "Other"),
-                createdAt: sheet.createdAt || new Date().toISOString(),
+                createdAt: sheet.createdAt || (sheet.id === 'legacy-sheet-1' ? '1970-01-01T00:00:00.000Z' : new Date().toISOString()),
                 data: sheet.data || {}
             }));
         }
@@ -3911,7 +3922,10 @@
                 let container = document.getElementById("sheetTabsContainer");
                 if (!container) return;
                 let html = "";
-                markSheets.forEach((sheet, idx) => {
+                const orderedSheets = markSheets.map((sheet, idx) => ({sheet, idx})).sort((a,b) =>
+                    new Date(b.sheet.createdAt || 0).getTime() - new Date(a.sheet.createdAt || 0).getTime()
+                );
+                orderedSheets.forEach(({sheet, idx}) => {
                     const meta = `${sheet.academicYear || ''} • ${sheet.term || ''} • ${sheet.assessmentType || ''}`;
                     html +=
                         `<div class="sheet-tab ${idx === currentSheetIndex ? 'active' : ''}" title="${escapeHtml(meta)}" onclick="window.switchSheet(${idx})">${escapeHtml(sheet.name)}<small style="display:block;font-size:9px;opacity:.75;">${escapeHtml(sheet.assessmentType || 'Assessment')}</small></div>`;
@@ -5136,10 +5150,12 @@
             return sorted.indexOf(student) + 1;
         }
 
-        function getSubjectPosition(student, subject) {
+        function getSubjectPosition(student, subject, assessmentId) {
             const gradeStudents = students.filter(s=>s.class===student.class);
-            const ranked = [...gradeStudents].sort((a,b)=>Number(getMark(b,subject)||0)-Number(getMark(a,subject)||0));
-            const pos = ranked.findIndex(s=>s.id===student.id)+1;
+            const ranked = [...gradeStudents].sort((a,b)=>
+                Number(getAssessmentMark(b,subject,assessmentId)||0)-Number(getAssessmentMark(a,subject,assessmentId)||0)
+            );
+            const pos = ranked.findIndex(s=>String(s.id)===String(student.id))+1;
             return pos>0 ? `${pos}/${gradeStudents.length}` : '';
         }
 
@@ -5154,7 +5170,7 @@
             return a ? (teachers.find(t=>String(t.id)===String(a.teacherId)) || teachers.find(t=>t.email===a.teacherEmail) || null) : null;
         }
         function getTeacherForGrade(grade,stream){ const t=getClassTeacherRecord(grade,stream); return t?.name || settings.teacher || ''; }
-        function getSubjectTeacherName(grade,stream,subject){ const t=getSubjectTeacherRecord(grade,stream,subject); return t?.name || getTeacherForGrade(grade,stream); }
+        function getSubjectTeacherName(grade,stream,subject){ const t=getSubjectTeacherRecord(grade,stream,subject); return t?.name || ''; }
         function getSubjectTeacherSignature(grade,stream,subject){ const t=getSubjectTeacherRecord(grade,stream,subject); return t?.signatureDataUrl || ''; }
         function getClassTeacherSignature(grade,stream){ const t=getClassTeacherRecord(grade,stream); return t?.signatureDataUrl || ''; }
         function assetImg(src, cls='report-asset'){ return src ? `<img src="${src}" class="${cls}" alt="">` : ''; }
@@ -5165,9 +5181,11 @@
             const sheet = getReportAssessment();
             const term = sheet?.term || settings.term || '';
             const year = sheet?.academicYear || settings.year || '';
-            const av = avg(student);
+            const reportAssessmentId = sheet?.id || getCurrentAssessmentSheet().id;
+            const reportMark = (st, sub) => getAssessmentMark(st, sub, reportAssessmentId);
+            const av = assessmentAvg(student, reportAssessmentId);
             const level = getPerformanceLevel(av, student.class);
-            const totalMarks = total(student);
+            const totalMarks = assessmentTotal(student, reportAssessmentId);
             const maxMarks = subs.length * 100;
             const classStudents = students.filter(s => s.class === student.class);
             const classPos = getClassRank(student);
@@ -5180,10 +5198,10 @@
             const dateText = new Date().toLocaleDateString(undefined,{day:'numeric',month:'numeric',year:'numeric'});
             let rows='';
             subs.forEach(sub=>{
-                const mark = Number(getMark(student,sub)) || 0;
+                const mark = Number(reportMark(student,sub)) || 0;
                 const lvl = getPerformanceLevel(mark, student.class);
                 const teacher = getSubjectTeacherName(student.class, student.stream, sub);
-                rows += `<tr><td>${escapeHtml(sub).toUpperCase()}</td><td class="center">${mark}</td><td class="center">${lvl.code}</td><td class="center"></td><td class="center"></td><td class="center">${mark}%</td><td class="center">${lvl.code}</td><td class="center">${getSubjectPosition(student,sub)}</td><td>${remarks(lvl.code)}</td><td>${escapeHtml(teacher)}</td></tr>`;
+                rows += `<tr><td>${escapeHtml(sub).toUpperCase()}</td><td class="center">${mark}</td><td class="center">${lvl.code}</td><td class="center"></td><td class="center"></td><td class="center">${mark}%</td><td class="center">${lvl.code}</td><td class="center">${getSubjectPosition(student,sub,reportAssessmentId)}</td><td>${remarks(lvl.code)}</td><td>${escapeHtml(teacher)}</td></tr>`;
             });
             // Live fee/payment totals from the shared school ledger.
             const studentPayments = payments.filter(p => String(p.studentId) === String(student.id));
@@ -5192,7 +5210,7 @@
             const outstandingFees = Math.max(0, totalSchoolFees - paidFees);
             const nextTermFees = Number(student.nextTermFees) || 0;
             const totalPayable = outstandingFees + nextTermFees;
-            const totalPoints = subs.reduce((sum,sub)=>sum+getPerformanceLevel(Number(getMark(student,sub))||0, student.class).points,0);
+            const totalPoints = subs.reduce((sum,sub)=>sum+getPerformanceLevel(Number(reportMark(student,sub))||0, student.class).points,0);
             const meanPoints = subs.length ? totalPoints/subs.length : 0;
             const lastPoints = Number(student.lastTermPoints || 0);
             const kpseaPoints = Number(student.kpseaPoints || 0);
@@ -5404,8 +5422,11 @@
             if (!el) return;
             markSheets = normalizeMarkSheets(markSheets);
             const current = getCurrentAssessmentSheet();
+            const orderedSheets = [...markSheets].sort((a,b) =>
+                new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+            );
             el.innerHTML = (includeCurrent ? '<option value="">Current Assessment</option>' : '') +
-                markSheets.map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)} — ${escapeHtml(x.academicYear)} • ${escapeHtml(x.term)} • ${escapeHtml(x.assessmentType)}</option>`).join('');
+                orderedSheets.map(x => `<option value="${escapeHtml(x.id)}">${escapeHtml(x.name)} — ${escapeHtml(x.academicYear)} • ${escapeHtml(x.term)} • ${escapeHtml(x.assessmentType)}</option>`).join('');
             if (current && [...el.options].some(o => o.value === String(current.id))) el.value = current.id;
         }
 
@@ -5526,10 +5547,10 @@
 
             h+=`<div class="merit-scroll-wrap"><table class="merit-master-table">
                 <thead><tr>
-                    <th>S/No</th><th>ADM NO</th><th>STUDENT NAME</th><th>ASSESSMENT NO</th><th>STREAM</th>
+                    <th>S/No</th><th>ADM NO</th><th>STUDENT NAME</th><th>STREAM</th>
                     <th>STR POS</th><th>OVL POS</th>`;
             subjectHeaders.forEach(sh=>h+=`<th>${escapeHtml(sh)}</th>`);
-            h+=`<th>SUB ENTRY</th><th>TOTAL MARKS</th><th>AVG MARKS</th><th>TOTAL POINTS</th><th>AVG POINTS</th><th>PERFORMANCE LEVEL</th>
+            h+=`<th class="vertical-header">SUB ENTRY</th><th class="vertical-header">TOTAL MARKS</th><th class="vertical-header">AVG MARKS</th><th class="vertical-header">TOTAL POINTS</th><th class="vertical-header">AVG POINTS</th><th class="vertical-header">PERFORMANCE LEVEL</th>
                 </tr></thead><tbody>`;
 
             ordered.forEach((s,i)=>{
@@ -5544,7 +5565,6 @@
                     <td class="center">${i+1}</td>
                     <td>${escapeHtml(String(s.admNo||s.studentCode||''))}</td>
                     <td class="name-cell">${escapeHtml(s.name||'')}</td>
-                    <td>${escapeHtml(String(s.assessmentNo||s.assNo||s.assessmentNumber||''))}</td>
                     <td class="center">${escapeHtml(s.stream||'')}</td>
                     <td class="center">${str}</td><td class="center">${ovl}</td>`;
                 subjects.forEach(sub=>{
@@ -5585,30 +5605,69 @@
                 h+=`</tbody></table>`;
             });
 
-            // Mean Grade Summary: one row per learning area, with the distribution
-            // of the eight CBE performance levels plus entry/mean statistics.
+            // Mean Grade Summary: preserve the existing CBE distribution and add
+            // per-subject stream division, winning stream, and an overall row.
+            const allGradeStudents = students.filter(s => s.class === x.grade);
+            const streamNames = [...new Set(allGradeStudents.map(s => String(s.stream || '').trim()).filter(Boolean))].sort();
+            const meanMetric = (student, sub) => sub === '__OVERALL__'
+                ? assessmentAvg(student, x.aid)
+                : subjectValue(student, sub);
+            const streamMeanText = (sub) => {
+                if (!streamNames.length) return '—';
+                return streamNames.map(stream => {
+                    const group = allGradeStudents.filter(s => String(s.stream || '') === stream);
+                    const vals = group.map(s => meanMetric(s, sub));
+                    const mean = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+                    return `${escapeHtml(stream)}: ${mean.toFixed(2)} (N=${vals.length})`;
+                }).join(' • ');
+            };
+            const winningStream = (sub) => {
+                if (!streamNames.length) return '—';
+                let best = null;
+                streamNames.forEach(stream => {
+                    const group = allGradeStudents.filter(s => String(s.stream || '') === stream);
+                    const vals = group.map(s => meanMetric(s, sub));
+                    const mean = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+                    if (!best || mean > best.mean) best = {stream, mean};
+                });
+                return best ? `${escapeHtml(best.stream)} (${best.mean.toFixed(2)})` : '—';
+            };
+            const junior=isJuniorGrade(x.grade);
+            const codes=junior?['EE1','EE2','ME1','ME2','AE1','AE2','BE1','BE2']:['EE','ME','AE','BE'];
             h+=`<div class="merit-section-title">MEAN GRADE SUMMARY</div>
                 <table class="merit-table mean-grade-summary"><thead><tr>
                 <th>Learning Area</th><th>Entries</th><th>Mean Marks</th>
-                <th>${isJuniorGrade(x.grade)?'EE1':'EE'}</th><th>${isJuniorGrade(x.grade)?'EE2':'ME'}</th><th>${isJuniorGrade(x.grade)?'ME1':'AE'}</th><th>${isJuniorGrade(x.grade)?'ME2':'BE'}</th>${isJuniorGrade(x.grade)?'<th>AE1</th><th>AE2</th><th>BE1</th><th>BE2</th>':''}
-                <th>Avg Points</th><th>Mean Level</th>
+                <th>${junior?'EE1':'EE'}</th><th>${junior?'EE2':'ME'}</th><th>${junior?'ME1':'AE'}</th><th>${junior?'ME2':'BE'}</th>${junior?'<th>AE1</th><th>AE2</th><th>BE1</th><th>BE2</th>':''}
+                <th class="vertical-header">Avg Points</th><th class="vertical-header">Mean Level</th>
+                <th class="vertical-header">STREAM DIVISION (N)</th><th class="vertical-header">WINNING STREAM</th>
                 </tr></thead><tbody>`;
             subjects.forEach(sub=>{
-                const vals=gradeStudents.map(s=>subjectValue(s,sub));
+                const vals=allGradeStudents.map(s=>subjectValue(s,sub));
                 const entered=vals.filter(v=>Number.isFinite(Number(v)) && Number(v)>0).length;
                 const mean=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
-                const junior=isJuniorGrade(x.grade);
-                const codes=junior?['EE1','EE2','ME1','ME2','AE1','AE2','BE1','BE2']:['EE','ME','AE','BE'];
                 const counts=Object.fromEntries(codes.map(c=>[c,0]));
                 vals.forEach(v=>{const lv=getPerformanceLevel(v, x.grade); counts[lv.code]=(counts[lv.code]||0)+1;});
                 const avgPts=vals.length?vals.reduce((a,b)=>a+getPerformanceLevel(b, x.grade).points,0)/vals.length:0;
                 const ml=getPerformanceLevel(mean, x.grade);
-                const countCells=counts;
                 h+=`<tr><td>${escapeHtml(sub)}</td><td class="center">${entered}</td><td class="center">${mean.toFixed(2)}</td>`;
-                if(junior){ h+=`<td class="center">${countCells.EE1}</td><td class="center">${countCells.EE2}</td><td class="center">${countCells.ME1}</td><td class="center">${countCells.ME2}</td><td class="center">${countCells.AE1}</td><td class="center">${countCells.AE2}</td><td class="center">${countCells.BE1}</td><td class="center">${countCells.BE2}</td>`; }
-                else { h+=`<td class="center">${countCells.EE}</td><td class="center">${countCells.ME}</td><td class="center">${countCells.AE}</td><td class="center">${countCells.BE}</td>`; }
-                h+=`<td class="center">${avgPts.toFixed(2)}</td><td class="center">${escapeHtml(ml.code)}</td></tr>`;
+                if(junior){ h+=`<td class="center">${counts.EE1}</td><td class="center">${counts.EE2}</td><td class="center">${counts.ME1}</td><td class="center">${counts.ME2}</td><td class="center">${counts.AE1}</td><td class="center">${counts.AE2}</td><td class="center">${counts.BE1}</td><td class="center">${counts.BE2}</td>`; }
+                else { h+=`<td class="center">${counts.EE}</td><td class="center">${counts.ME}</td><td class="center">${counts.AE}</td><td class="center">${counts.BE}</td>`; }
+                h+=`<td class="center">${avgPts.toFixed(2)}</td><td class="center">${escapeHtml(ml.code)}</td>
+                    <td>${streamMeanText(sub)}</td><td class="center">${winningStream(sub)}</td></tr>`;
             });
+
+            const overallVals=allGradeStudents.map(s=>assessmentAvg(s,x.aid));
+            const overallEntered=overallVals.filter(v=>Number.isFinite(Number(v)) && Number(v)>0).length;
+            const overallMean=overallVals.length?overallVals.reduce((a,b)=>a+b,0)/overallVals.length:0;
+            const overallCounts=Object.fromEntries(codes.map(c=>[c,0]));
+            overallVals.forEach(v=>{const lv=getPerformanceLevel(v,x.grade); overallCounts[lv.code]=(overallCounts[lv.code]||0)+1;});
+            const overallAvgPts=overallVals.length?overallVals.reduce((a,b)=>a+getPerformanceLevel(b,x.grade).points,0)/overallVals.length:0;
+            const overallLevel=getPerformanceLevel(overallMean,x.grade);
+            h+=`<tr><td><strong>OVERALL</strong></td><td class="center">${overallEntered}</td><td class="center"><strong>${overallMean.toFixed(2)}</strong></td>`;
+            if(junior){ h+=`<td class="center">${overallCounts.EE1}</td><td class="center">${overallCounts.EE2}</td><td class="center">${overallCounts.ME1}</td><td class="center">${overallCounts.ME2}</td><td class="center">${overallCounts.AE1}</td><td class="center">${overallCounts.AE2}</td><td class="center">${overallCounts.BE1}</td><td class="center">${overallCounts.BE2}</td>`; }
+            else { h+=`<td class="center">${overallCounts.EE}</td><td class="center">${overallCounts.ME}</td><td class="center">${overallCounts.AE}</td><td class="center">${overallCounts.BE}</td>`; }
+            h+=`<td class="center">${overallAvgPts.toFixed(2)}</td><td class="center"><strong>${escapeHtml(overallLevel.code)}</strong></td>
+                <td>${streamMeanText('__OVERALL__')}</td><td class="center">${winningStream('__OVERALL__')}</td></tr>`;
             h+=`</tbody></table>
                 <div class="merit-footer">Report generated by EduNexa Pro • Assessment: ${escapeHtml(sheet?.name||'')} • ${escapeHtml(sheet?.academicYear||settings.year||'')} • ${escapeHtml(sheet?.term||settings.term||'')}</div>
                 </div>`;
@@ -5641,8 +5700,8 @@ function previewMeritList(){const c=document.getElementById('meritListPreview');
             const rows=arr.map((s,i)=>{
                 const streamList=[...students.filter(z=>z.class===s.class&&z.stream===s.stream)].sort(rankSort);
                 const overallList=[...students.filter(z=>z.class===s.class)].sort(rankSort);
-                const r={'S/No':i+1,'ADM No':s.admNo||s.studentCode||'','Student Name':s.name||'','Assessment No':s.assessmentNo||s.assNo||s.assessmentNumber||'','Stream':s.stream||'',
-                    'Stream Position':rank(streamList,s),'Overall Position':rank(overallList,s),'Previous Stream Position':'','Previous Overall Position':''};
+                const r={'S/No':i+1,'ADM No':s.admNo||s.studentCode||'','Student Name':s.name||'','Stream':s.stream||'',
+                    'Stream Position':rank(streamList,s),'Overall Position':rank(overallList,s)};
                 subjects.forEach(sub=>{const m=getAssessmentMark(s,sub,x.aid);r[sub]=`${m} ${getPerformanceLevel(m, s.class).code}`;});
                 const totalM=assessmentTotal(s,x.aid), avgM=assessmentAvg(s,x.aid), totalP=assessmentPoints(s,x.aid);
                 r['Sub Entry']=subjects.filter(sub=>Number(getAssessmentMark(s,sub,x.aid)||0)>0).length;
