@@ -741,6 +741,7 @@
         .merit-master-table th{background:#eee!important;text-align:center!important;font-weight:700!important;white-space:nowrap!important;}
         .merit-master-table td{white-space:nowrap!important;}
         .merit-master-table .name-cell{white-space:normal!important;min-width:70px!important;}
+        .merit-master-table th:first-child,.merit-master-table td:first-child{min-width:28px!important;width:5%!important;text-align:center!important;}
         .merit-master-table .subject-mark{text-align:center!important;font-weight:700!important;}
         .merit-master-table .subject-mark small{display:inline!important;margin-left:2px!important;font-size:7px!important;font-weight:700!important;}
         .merit-section-title{font-size:11px!important;margin:6px 0 3px!important;}
@@ -913,6 +914,7 @@
         .merit-pdf-holder .merit-master-table{font-size:7.5px!important;table-layout:auto!important;width:100%!important;}
         .merit-pdf-holder .merit-master-table th,.merit-pdf-holder .merit-master-table td{padding:2.5px 3px!important;white-space:nowrap!important;}
         .merit-pdf-holder .merit-master-table .name-cell{white-space:normal!important;min-width:70px!important;}
+        .merit-pdf-holder .merit-master-table th:first-child,.merit-pdf-holder .merit-master-table td:first-child{min-width:28px!important;width:5%!important;text-align:center!important;}
         .merit-pdf-holder .merit-table{font-size:8px!important;width:100%!important;}
         .merit-pdf-holder .merit-table th,.merit-pdf-holder .merit-table td{padding:3px 4px!important;}
         .merit-pdf-holder .merit-section-title,.merit-pdf-holder .merit-scope-title{break-after:avoid!important;page-break-after:avoid!important;}
@@ -3655,68 +3657,90 @@
                 if (!password || password.length < 6) { showToast("Password must be at least 6 characters", true); return; }
                 if (password !== confirmPassword) { showToast("Passwords do not match", true); return; }
                 let existing = teachers.find(t => t.grade === grade && t.stream === stream);
+                let replacedTeacher = null;
                 if (existing) {
-                    if (confirm(
-                            `A class teacher (${existing.name}) already exists for ${grade} - ${stream}. Replace with ${name}?`
-                            )) {
+                    if (confirm(`A class teacher (${existing.name}) already exists for ${grade} - ${stream}. Replace with ${name}?`)) {
+                        replacedTeacher = existing;
                         teachers = teachers.filter(t => !(t.grade === grade && t.stream === stream));
                     } else { closeModal("teacherModal"); return; }
                 }
                 const sigFile = document.getElementById('teacherSignature')?.files?.[0];
                 window.__pendingTeacherSignatureDataUrl = '';
-                if (sigFile) {
-                    window.__pendingTeacherSignatureDataUrl = await window.readCompressedSchoolImage(sigFile, 700, 0.88);
-                }
-                // Use a secondary Firebase Auth instance so creating a teacher
-                // cannot silently switch the administrator's active session.
-                let teacherCreationApp;
-                try { teacherCreationApp = firebase.app('edunexaTeacherCreation'); }
-                catch (_) { teacherCreationApp = firebase.initializeApp(firebaseConfig, 'edunexaTeacherCreation'); }
-                const teacherAuth = teacherCreationApp.auth();
-                try { await teacherAuth.signOut(); } catch (_) {}
-                const userCredential = await teacherAuth.createUserWithEmailAndPassword(email, password);
-                const authUid = userCredential.user.uid;
-                try { await teacherAuth.signOut(); } catch (_) {}
+                if (sigFile) window.__pendingTeacherSignatureDataUrl = await window.readCompressedSchoolImage(sigFile, 700, 0.88);
                 const moeCode = settings.moeCode || '';
 
-                teachers.push({
-                    id: Date.now(),
-                    name,
-                    grade,
-                    stream,
-                    phone,
-                    email,
-                    auth_uid: authUid,
-                    moeCode: moeCode,
+                // Secondary Auth is retained so the administrator's active session is never switched.
+                // Auth/profile creation is NON-BLOCKING: a users/ permission error must never prevent
+                // the actual class-teacher record from being stored in the school document.
+                let authUid = '';
+                try {
+                    let teacherCreationApp;
+                    try { teacherCreationApp = firebase.app('edunexaTeacherCreation'); }
+                    catch (_) { teacherCreationApp = firebase.initializeApp(firebaseConfig, 'edunexaTeacherCreation'); }
+                    const teacherAuth = teacherCreationApp.auth();
+                    try { await teacherAuth.signOut(); } catch (_) {}
+                    try {
+                        const userCredential = await teacherAuth.createUserWithEmailAndPassword(email, password);
+                        authUid = userCredential.user.uid;
+                    } catch (authError) {
+                        if (authError?.code === 'auth/email-already-in-use') {
+                            // If this is an existing teacher account and the supplied password matches,
+                            // reuse its UID. If not, still persist the class-teacher assignment.
+                            try {
+                                const existingCredential = await teacherAuth.signInWithEmailAndPassword(email, password);
+                                authUid = existingCredential.user.uid;
+                            } catch (signInError) {
+                                console.warn('Existing teacher email could not be authenticated; class teacher will still be persisted.', signInError);
+                            }
+                        } else {
+                            console.warn('Teacher Auth creation failed; class teacher will still be persisted.', authError);
+                        }
+                    }
+                    try { await teacherAuth.signOut(); } catch (_) {}
+                } catch (authSetupError) {
+                    console.warn('Teacher Auth service unavailable; class teacher will still be persisted.', authSetupError);
+                }
+
+                const teacherRecord = {
+                    id: Date.now(), name, grade, stream, phone, email,
+                    auth_uid: authUid, moeCode,
                     signatureDataUrl: window.__pendingTeacherSignatureDataUrl || '',
                     created_at: new Date().toISOString()
-                });
-
-                // SURGICAL PERSISTENCE: keep class-teacher records in both the
-                // primary teachers collection and settings so older/newer app
-                // readers cannot drop an assigned class teacher.
+                };
+                teachers.push(teacherRecord);
                 settings.classTeachers = teachers.map(t => ({...t}));
 
-                await db.collection('users').doc(authUid).set({
-                    email: email,
-                    role: 'teacher',
-                    schoolId: currentUser.uid,
-                    moeCode: moeCode,
-                    name: name,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
+                // IMPORTANT: persist the school/class-teacher record FIRST. A denied users/ write
+                // must not cancel the successful class-teacher save.
+                const schoolSaved = await saveToFirebase();
+                if (!schoolSaved) {
+                    teachers = teachers.filter(t => t !== teacherRecord);
+                    if (replacedTeacher) teachers.push(replacedTeacher);
+                    settings.classTeachers = teachers.map(t => ({...t}));
+                    showToast('❌ Class teacher could not be saved to the school record.', true);
+                    return;
+                }
 
-                await saveToFirebase();
-                await loadFromFirebase(); // FIXED: ensures local array is updated
+                // Best-effort profile write. Firebase rules can deny this without affecting persistence.
+                if (authUid) {
+                    try {
+                        await db.collection('users').doc(authUid).set({
+                            email, role:'teacher', schoolId:currentUser.uid,
+                            schoolAccountId:getSchoolAccountId(), moeCode, name,
+                            createdAt:firebase.firestore.FieldValue.serverTimestamp()
+                        }, {merge:true});
+                    } catch (profileError) {
+                        console.warn('users/ profile write denied; class teacher is already persisted in schools/.', profileError);
+                    }
+                }
+
+                await loadFromFirebase();
                 closeModal("teacherModal");
                 refreshAllUI();
-                showToast(`✅ Class Teacher ${name} assigned to ${grade} - ${stream} with login credentials! (MOE: ${moeCode})`,
-                    false);
+                showToast(`✅ Class Teacher ${name} assigned to ${grade} - ${stream}.`, false);
             } catch (error) {
                 console.error("Error creating teacher:", error);
-                if (error.code === 'auth/email-already-in-use') {
-                    showToast("❌ A user with this email already exists. Please use a different email.", true);
-                } else { showToast("❌ Error creating teacher: " + error.message, true); }
+                showToast("❌ Error saving class teacher: " + (error.message || error), true);
             }
         }
 
@@ -4035,40 +4059,59 @@
             const schoolId = getSchoolAccountId();
             if (!schoolId) throw new Error('Unable to resolve the school account.');
             const ref = db.collection('schools').doc(schoolId);
-            try {
-                // Firestore transaction makes simultaneous edits from computers A/B/C/D
-                // safe: each transaction re-reads the latest sheet before committing the
-                // single edited cell, so one teacher cannot silently erase another's mark.
-                let committedSheets = null;
-                await db.runTransaction(async transaction => {
-                    const snap = await transaction.get(ref);
-                    const cloudSheets = normalizeMarkSheets(snap.exists ? (snap.data().markSheets || []) : []);
-                    const sheetId = getCurrentAssessmentSheet().id;
-                    let sheet = cloudSheets.find(x => String(x.id) === String(sheetId));
-                    if (!sheet) {
-                        const local = getCurrentAssessmentSheet();
-                        sheet = JSON.parse(JSON.stringify(local));
-                        cloudSheets.push(sheet);
+            const targetSheetId = getCurrentAssessmentSheet().id;
+
+            // SURGICAL FIX: mark writes share the same save queue as all other school
+            // writes. The old implementation launched a separate transaction for every
+            // keystroke, so a fast edit could race saveToFirebase() and produce the
+            // Firestore "stored version does not match required base version" error.
+            // Serializing mark transactions removes that local write contention while
+            // still allowing the Firestore transaction to retry safely against changes
+            // made by other computers.
+            const operation = saveQueue.then(async () => {
+                let lastError = null;
+                for (let attempt = 1; attempt <= 5; attempt++) {
+                    try {
+                        let committedSheets = null;
+                        await db.runTransaction(async transaction => {
+                            const snap = await transaction.get(ref);
+                            const cloudSheets = normalizeMarkSheets(snap.exists ? (snap.data().markSheets || []) : []);
+                            const sheetId = targetSheetId;
+                            let sheet = cloudSheets.find(x => String(x.id) === String(sheetId));
+                            if (!sheet) {
+                                const local = getCurrentAssessmentSheet();
+                                sheet = JSON.parse(JSON.stringify(local));
+                                cloudSheets.push(sheet);
+                            }
+                            const key = `${grade}_${stream}`;
+                            if (!sheet.data[key]) sheet.data[key] = {};
+                            if (!sheet.data[key][String(studentId)]) sheet.data[key][String(studentId)] = {};
+                            sheet.data[key][String(studentId)][subject] = value;
+                            committedSheets = cloudSheets;
+                            transaction.set(ref, { markSheets: cloudSheets }, { merge: true });
+                        });
+                        if (committedSheets) {
+                            markSheets = committedSheets;
+                            lastCloudState = { ...(lastCloudState || {}), markSheets: committedSheets };
+                            dataLoaded = true;
+                        }
+                        console.log(`✅ Mark saved: ${studentId} / ${subject} = ${value} (attempt ${attempt})`);
+                        return true;
+                    } catch (error) {
+                        lastError = error;
+                        const msg = String(error?.message || error || '').toLowerCase();
+                        const retryable = msg.includes('version') || msg.includes('conflict') || msg.includes('aborted') || error?.code === 'aborted';
+                        if (!retryable || attempt === 5) break;
+                        await new Promise(resolve => setTimeout(resolve, 120 * attempt));
                     }
-                    const key = `${grade}_${stream}`;
-                    if (!sheet.data[key]) sheet.data[key] = {};
-                    if (!sheet.data[key][studentId]) sheet.data[key][studentId] = {};
-                    sheet.data[key][studentId][subject] = value;
-                    committedSheets = cloudSheets;
-                    transaction.set(ref, { markSheets: cloudSheets }, { merge: true });
-                });
-                if (committedSheets) {
-                    markSheets = committedSheets;
-                    lastCloudState = { ...(lastCloudState || {}), markSheets: committedSheets };
-                    dataLoaded = true;
                 }
-                return true;
-            } catch (error) {
-                console.error('Single mark save error:', error);
-                if (isPermissionError(error)) showToast('⛔ Permission denied while saving marks. Check Firebase rules.', true);
-                else showToast('❌ Mark could not be saved: ' + (error.message || error), true);
+                console.error('Single mark save error:', lastError);
+                if (isPermissionError(lastError)) showToast('⛔ Permission denied while saving marks. Check Firebase rules.', true);
+                else showToast('❌ Mark could not be saved: ' + (lastError?.message || lastError || 'Unknown error'), true);
                 return false;
-            }
+            });
+            saveQueue = operation.catch(() => false);
+            return operation;
         }
 
         async function handleMarkInput() {
@@ -5396,10 +5439,27 @@
         function getAssessmentMark(student, subject, assessmentId) {
             const sheet = getAssessmentById(assessmentId);
             const key = `${student.class}_${student.stream}`;
-            const data = sheet?.data?.[key]?.[student.id];
-            if (data && data[subject] !== undefined) return Number(data[subject]) || 0;
+            const data = sheet?.data?.[key]?.[String(student.id)];
+            if (data && Object.prototype.hasOwnProperty.call(data, subject)) return Number(data[subject]) || 0;
             // Preserve the original/legacy marks structure when using Sheet 1.
-            return sheet?.id === 'legacy-sheet-1' ? (Number(getMark(student, subject)) || 0) : 0;
+            if (sheet?.id === 'legacy-sheet-1') {
+                const legacyKey = subject.toLowerCase().replace(/[^a-z]/g, '');
+                if (student?.marks && Object.prototype.hasOwnProperty.call(student.marks, legacyKey)) return Number(student.marks[legacyKey]) || 0;
+                if (student?.marks && Object.prototype.hasOwnProperty.call(student.marks, subject)) return Number(student.marks[subject]) || 0;
+            }
+            return 0;
+        }
+
+        function hasAssessmentMark(student, subject, assessmentId) {
+            const sheet = getAssessmentById(assessmentId);
+            const key = `${student.class}_${student.stream}`;
+            const data = sheet?.data?.[key]?.[String(student.id)];
+            if (data && Object.prototype.hasOwnProperty.call(data, subject)) return true;
+            if (sheet?.id === 'legacy-sheet-1') {
+                const legacyKey = subject.toLowerCase().replace(/[^a-z]/g, '');
+                return !!(student?.marks && (Object.prototype.hasOwnProperty.call(student.marks, legacyKey) || Object.prototype.hasOwnProperty.call(student.marks, subject)));
+            }
+            return false;
         }
 
         function assessmentAvg(student, assessmentId) {
@@ -5414,7 +5474,7 @@
 
         function assessmentPoints(student, assessmentId) {
             const subs = getSubjects(student.class);
-            return subs.reduce((sum, sub) => sum + getPerformanceLevel(getAssessmentMark(student, sub, assessmentId)).points, 0);
+            return subs.reduce((sum, sub) => sum + getPerformanceLevel(getAssessmentMark(student, sub, assessmentId), student.class).points, 0);
         }
 
         function populateAssessmentSelect(id, includeCurrent = true) {
@@ -5550,7 +5610,7 @@
                     <th>S/No</th><th>ADM NO</th><th>STUDENT NAME</th><th>STREAM</th>
                     <th>STR POS</th><th>OVL POS</th>`;
             subjectHeaders.forEach(sh=>h+=`<th>${escapeHtml(sh)}</th>`);
-            h+=`<th class="vertical-header">SUB ENTRY</th><th class="vertical-header">TOTAL MARKS</th><th class="vertical-header">AVG MARKS</th><th class="vertical-header">TOTAL POINTS</th><th class="vertical-header">AVG POINTS</th><th class="vertical-header">PERFORMANCE LEVEL</th>
+            h+=`<th class="vertical-header">SUB ENTRY</th><th class="vertical-header">TOTAL MARKS</th><th class="vertical-header">AVG MARKS</th><th class="vertical-header">TOTAL POINTS</th><th class="vertical-header">AVG POINTS</th><th class="vertical-header">P/L</th>
                 </tr></thead><tbody>`;
 
             ordered.forEach((s,i)=>{
@@ -5572,7 +5632,7 @@
                     const lv=getPerformanceLevel(m, s.class);
                     h+=`<td class="subject-mark">${m}<small>${escapeHtml(lv.code)}</small></td>`;
                 });
-                h+=`<td class="center">${subjects.filter(sub=>subjectValue(s,sub)>0).length}</td>
+                h+=`<td class="center">${subjects.filter(sub=>hasAssessmentMark(s,sub,x.aid)).length}</td>
                     <td class="center">${totalM}/${subjects.length*100}</td>
                     <td class="center">${avgM.toFixed(2)}</td>
                     <td class="center">${totalP}</td>
@@ -5581,6 +5641,33 @@
                 </tr>`;
             });
             h+=`</tbody></table></div>`;
+
+            // SUBJECT STREAM PERFORMANCE comes before the BEST 5 section.
+            // For every learning area, show each stream's total marks, mean %, total
+            // points and mean points, then identify the winning stream by mean marks
+            // and show the winning stream's points.
+            h+=`<div class="merit-section-title">SUBJECT / STREAM PERFORMANCE</div>`;
+            subjects.forEach(sub=>{
+                const stats=streamNames.map(stream=>{
+                    const group=gradeStudents.filter(s=>String(s.stream||'')===stream);
+                    const marks=group.map(s=>subjectValue(s,sub));
+                    const total=marks.reduce((a,b)=>a+b,0);
+                    const mean=marks.length?total/marks.length:0;
+                    const points=group.reduce((a,s)=>a+getPerformanceLevel(subjectValue(s,sub),s.class).points,0);
+                    const meanPoints=group.length?points/group.length:0;
+                    return {stream,n:group.length,total,mean,points,meanPoints};
+                });
+                const winner=stats.length?stats.slice().sort((a,b)=>b.mean-a.mean||b.meanPoints-a.meanPoints||b.total-a.total)[0]:null;
+                h+=`<div style="font-weight:700;margin:7px 0 2px;">${escapeHtml(sub.toUpperCase())}</div>`;
+                h+=`<table class="merit-table subject-stream-table"><thead><tr><th>STREAM</th><th>N</th><th>TOTAL MKS</th><th>MEAN %</th><th>TOTAL POINTS</th><th>MEAN POINTS</th></tr></thead><tbody>`;
+                stats.forEach(st=>{
+                    h+=`<tr><td>${escapeHtml(st.stream)}</td><td class="center">${st.n}</td><td class="center">${st.total}</td><td class="center">${st.mean.toFixed(2)}</td><td class="center">${st.points}</td><td class="center">${st.meanPoints.toFixed(2)}</td></tr>`;
+                });
+                if(winner){
+                    h+=`<tr><td colspan="2"><strong>WINNING STREAM</strong></td><td class="center"><strong>${winner.total}</strong></td><td class="center"><strong>${winner.mean.toFixed(2)}%</strong></td><td class="center"><strong>${winner.points} POINTS</strong></td><td class="center"><strong>${winner.meanPoints.toFixed(2)}</strong></td></tr>`;
+                }
+                h+=`</tbody></table>`;
+            });
 
             // Exactly five learners per learning area.
             subjects.forEach(sub=>{
@@ -5591,7 +5678,7 @@
                 const top5=arr.slice(0,5);
                 h+=`<div class="merit-section-title">BEST 5 STUDENTS IN ${escapeHtml(sub.toUpperCase())}</div>
                     <table class="merit-table merit-top5-table"><thead><tr>
-                    <th>No</th><th>ADM No</th><th>Student Name</th><th>Stream</th><th>% Mks</th><th>P.Level</th><th>Pos</th>
+                    <th>No</th><th>ADM No</th><th>Student Name</th><th>Stream</th><th>% Mks</th><th>P/L</th><th>Pos</th>
                     </tr></thead><tbody>`;
                 top5.forEach((s,i)=>{
                     const m=subjectValue(s,sub);
@@ -5628,9 +5715,10 @@
                     const group = allGradeStudents.filter(s => String(s.stream || '') === stream);
                     const vals = group.map(s => meanMetric(s, sub));
                     const mean = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
-                    if (!best || mean > best.mean) best = {stream, mean};
+                    const points = group.length ? group.reduce((sum, s) => sum + getPerformanceLevel(meanMetric(s, sub), s.class).points, 0) / group.length : 0;
+                    if (!best || mean > best.mean) best = {stream, mean, points};
                 });
-                return best ? `${escapeHtml(best.stream)} (${best.mean.toFixed(2)})` : '—';
+                return best ? `${escapeHtml(best.stream)} (${best.mean.toFixed(2)}%, ${best.points.toFixed(2)} pts)` : '—';
             };
             const junior=isJuniorGrade(x.grade);
             const codes=junior?['EE1','EE2','ME1','ME2','AE1','AE2','BE1','BE2']:['EE','ME','AE','BE'];
@@ -5638,8 +5726,8 @@
                 <table class="merit-table mean-grade-summary"><thead><tr>
                 <th>Learning Area</th><th>Entries</th><th>Mean Marks</th>
                 <th>${junior?'EE1':'EE'}</th><th>${junior?'EE2':'ME'}</th><th>${junior?'ME1':'AE'}</th><th>${junior?'ME2':'BE'}</th>${junior?'<th>AE1</th><th>AE2</th><th>BE1</th><th>BE2</th>':''}
-                <th class="vertical-header">Avg Points</th><th class="vertical-header">Mean Level</th>
-                <th class="vertical-header">STREAM DIVISION (N)</th><th class="vertical-header">WINNING STREAM</th>
+                <th class="vertical-header">Avg Points</th><th class="vertical-header">P/L</th>
+                <th class="vertical-header">STREAM DIVISION (N)</th><th class="vertical-header">WINNING STREAM / POINTS</th>
                 </tr></thead><tbody>`;
             subjects.forEach(sub=>{
                 const vals=allGradeStudents.map(s=>subjectValue(s,sub));
@@ -5668,9 +5756,33 @@
             else { h+=`<td class="center">${overallCounts.EE}</td><td class="center">${overallCounts.ME}</td><td class="center">${overallCounts.AE}</td><td class="center">${overallCounts.BE}</td>`; }
             h+=`<td class="center">${overallAvgPts.toFixed(2)}</td><td class="center"><strong>${escapeHtml(overallLevel.code)}</strong></td>
                 <td>${streamMeanText('__OVERALL__')}</td><td class="center">${winningStream('__OVERALL__')}</td></tr>`;
-            h+=`</tbody></table>
-                <div class="merit-footer">Report generated by EduNexa Pro • Assessment: ${escapeHtml(sheet?.name||'')} • ${escapeHtml(sheet?.academicYear||settings.year||'')} • ${escapeHtml(sheet?.term||settings.term||'')}</div>
-                </div>`;
+            h+=`</tbody></table>`;
+
+            // Incomplete Assessments: explicitly show learners whose selected
+            // assessment does not contain a mark for every learning area. Zero is a
+            // valid mark; only an actually missing entry is treated as incomplete.
+            const incomplete=gradeStudents.filter(s=>subjects.some(sub=>!hasAssessmentMark(s,sub,x.aid)));
+            if(incomplete.length){
+                h+=`<div class="merit-section-title">INCOMPLETE ASSESSMENTS</div>
+                    <table class="merit-table incomplete-assessments"><thead><tr>
+                    <th>No</th><th>ADM No</th><th>Student Name</th><th>Stream</th>`;
+                subjects.forEach(sub=>h+=`<th>${escapeHtml(sub)}</th>`);
+                h+=`<th>ENTRY</th><th>MISSING LEARNING AREAS</th></tr></thead><tbody>`;
+                incomplete.forEach((s,i)=>{
+                    const missing=subjects.filter(sub=>!hasAssessmentMark(s,sub,x.aid));
+                    h+=`<tr><td class="center">${i+1}</td><td>${escapeHtml(String(s.admNo||s.studentCode||''))}</td><td>${escapeHtml(s.name||'')}</td><td class="center">${escapeHtml(s.stream||'')}</td>`;
+                    subjects.forEach(sub=>{
+                        const present=hasAssessmentMark(s,sub,x.aid);
+                        const m=subjectValue(s,sub);
+                        const lv=getPerformanceLevel(m,s.class);
+                        h+=`<td class="center">${present?`${m} ${escapeHtml(lv.code)}`:'—'}</td>`;
+                    });
+                    h+=`<td class="center">${subjects.length-missing.length}/${subjects.length}</td><td>${escapeHtml(missing.join(', '))}</td></tr>`;
+                });
+                h+=`</tbody></table>`;
+            }
+
+            h+=`<div class="merit-footer">Report generated by EduNexa Pro • Assessment: ${escapeHtml(sheet?.name||'')} • ${escapeHtml(sheet?.academicYear||settings.year||'')} • ${escapeHtml(sheet?.term||settings.term||'')}</div></div>`;
             return h;
         }
         function getStreamRankForAssessment(student, aid){
